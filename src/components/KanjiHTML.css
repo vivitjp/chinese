@@ -1,0 +1,11 @@
+span.kanji {
+  font-size: 50px;
+}
+
+ruby.kanjiSound {
+  font-size: 10px;
+}
+
+ruby.kanjiChar {
+  font-size: inherit;
+}
