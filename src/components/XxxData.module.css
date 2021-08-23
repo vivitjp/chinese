@@ -1,0 +1,47 @@
+div.transbody {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px;
+}
+
+div.body_tr {
+  width: auto;
+  margin: 0;
+  margin-top: 20px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+div.body_ttl {
+  width: auto;
+  margin: 0;
+  margin-top: 20px;
+  padding: 10px;
+  overflow: hidden;
+  font-size: 2rem;
+}
+
+div.output {
+  width: auto;
+  margin: 0;
+  margin-top: 20px;
+  border: 1px solid #AAA;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.inputfield {
+  width: 90%;
+  font-size: 20px;
+}
+
+.inputbutton {
+  padding: 5px 20px;
+  font-size: 16px;
+  margin-right: 20px;
+}
+
+.pycheck {
+  margin-left: 20px;
+}

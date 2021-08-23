@@ -11,7 +11,7 @@ const getWordsArray = (sentence, idx, max = 4) => {
 
   for (let i = 1; i < MAX; i++) {
     const nextChar = sentence.substr(idx + i, 1)
-    console.log('nextChar', nextChar)
+    //console.log('nextChar', nextChar)
     if (nextChar.match(/[。，\s0-9a-zA-Z.,()[\]{}<>《》（）]/)) break
     charArr.push(sentence.substr(idx, i + 1));
   }
@@ -20,38 +20,43 @@ const getWordsArray = (sentence, idx, max = 4) => {
 };
 
 
-//JIBO: [ "你", "旧字", "nǐ", "1" ],[ "好", "", "hǎo/hào", "2" ]
+//JIBO: [ "你", ["nǐ"], "1" ],[ "好", ["hǎo","hào"], "2" ]
 //TREE: [ "你争我夺", "你死我活", "你们", "你来我往", "你追我赶" ]
 //DICT: {"娃娃": "wá wá", "娃娃亲": "wá wa qīn", "娃娃脸": "wá wá liǎn",}
 
 const makeLetterColored = ({ sentence, dict, tree, jibo }) => {
   let arrColoredLetters = []
+  // console.log(Object.keys(dict).length)
+  // console.log(Object.keys(tree).length)
+  // console.log(Object.keys(jibo).length)
 
-  const JIBO_IDX = 2
+  const JIBO_PY = 1
+  const JIBO_NUM = 2
 
   let arrIdx = 0;
   for (let i = 0; i < sentence.length; i++) {
     const kanjiChar = sentence[i];
-    // console.log('Jibo', jibo[kanjiChar]);
-    // console.log('Tree', tree[kanjiChar]);
-    // console.log('Dict', dict[kanjiChar]);
     const jiboHit = jibo[kanjiChar];
 
-    if (!jiboHit || !jiboHit[3]) { //[1] 字母に記載なし
+    if (!jiboHit) { //[1] 字母に記載なし
       arrColoredLetters.push({
-        idx: arrIdx++, kanjiChar: kanjiChar, sound: null,
+        idx: arrIdx++, kanjiChar: kanjiChar, sound: '',
       })
     }
     else { //[2] 字母に記載あり、発音１つのみ
-      if (jiboHit[3] === '1' || i === sentence.length - 1) { //発音数==1 OR 文末
+      const jiboMainSound = jiboHit[JIBO_PY][0] || ''
+      //if (!jiboMainSound) continue
+
+      if (jiboHit[JIBO_NUM] === '1' || i === sentence.length - 1) {
         arrColoredLetters.push({
-          idx: arrIdx++, kanjiChar: kanjiChar, sound: jiboHit[JIBO_IDX],
+          idx: arrIdx++, kanjiChar: kanjiChar, sound: jiboMainSound,
         })
       } else {
         let hit = false
         for (const n of getWordsArray(sentence, i)) {
           //[3] 熟語Dictに記載あり [ "好人好事", "好几", "好说", , … ]
           if (tree[kanjiChar].includes(n)) {
+
             arrColoredLetters.push({
               idx: arrIdx++, kanjiChar: n, sound: dict[n],
             })
@@ -63,7 +68,7 @@ const makeLetterColored = ({ sentence, dict, tree, jibo }) => {
         if (!hit) {
           //[4] 熟語Dictに記載なし、字母の複数の発音の中から最初の発音を返す
           arrColoredLetters.push({
-            idx: arrIdx++, kanjiChar: kanjiChar, sound: jiboHit[JIBO_IDX].split('/')[0] || '',
+            idx: arrIdx++, kanjiChar: kanjiChar, sound: jiboMainSound,
           })
         }
       }

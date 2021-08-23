@@ -2,8 +2,9 @@ span.kanji {
   font-size: 50px;
 }
 
-ruby.kanjiSound {
-  font-size: 10px;
+rt.kanjiSound {
+  font-size: 16px;
+  color: #AAA;
 }
 
 ruby.kanjiChar {

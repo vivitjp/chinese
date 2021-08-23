@@ -2,7 +2,7 @@
 // 戻値: 1
 export const getChineseAccentNum = (sound) => {
   if (!sound) {
-    console.log('getChineseAccentNum: Error')
+    //console.log('getChineseAccentNum: Error')
     return 0;
   }
   if (sound.match(/[āīūēōǖ]/)) return 1
