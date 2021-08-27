@@ -3,19 +3,20 @@ import { getJson } from '../api/getJson';
 import makeLetterColored from './makeLetterColored'
 import { KanjiHTML } from './KanjiHTML';
 import styles from './XxxData.module.css'
+
 import { useForm } from 'react-hook-form'
 import { FormControlLabel, Button, Checkbox, TextField } from '@material-ui/core';
 
 function XxxData() {
-  const { register, handleSubmit, reset } = useForm();
-
-  //const inputRef = useRef(); //参照変数宣言
+  const { register, handleSubmit } = useForm();
 
   const [jibo, setJibo] = useState(null);
   const [dict, setDict] = useState(null);
-  const [tree, setTree] = useState(null);
+  const [extra, setExtra] = useState(null);
   const [sounds, setSounds] = useState(null);
   const [withPY, setWithPY] = useState(false);
+
+  const sampleText = "当然最主要的行动原因银行行不行";
 
   useEffect(
     () => {
@@ -28,33 +29,37 @@ function XxxData() {
         if (res) { setDict(res) }
       })();
       (async () => {
-        const res = await getJson("./data/dict_tree.json")
-        if (res) { setTree(res) }
+        const res = await getJson("./data/dict_extra.json")
+        if (res) { setExtra(res) }
       })();
     }, []
   );
 
   // 変換
   const handleChange = (data) => {
-    //console.log(data)
     let sentence = data.txtChinese;
     if (!sentence) return
-    const res = makeLetterColored({ sentence, jibo, dict, tree })
-    //console.log(res)
+    const res = makeLetterColored({ sentence, dict, extra, jibo })
     if (res) setSounds(res)
   }
 
   return (
     <>
-      <div className="transbody">
+      <div className={styles.transbody}>
         <div className={styles.body_ttl}>
-          中国語の拼音を彩色表示
+          <ruby className={styles.color1}>声<rt className={styles.pron}>Shēng</rt></ruby>
+          <ruby className={styles.color2}>即<rt className={styles.pron}>Jí</rt></ruby>
+          <ruby className={styles.color3}>彩<rt className={styles.pron}>Cǎi</rt></ruby>
+          <ruby className={styles.color4}>色<rt className={styles.pron}>Sè</rt></ruby>
+        </div>
+        <div className={styles.body_subttl}>
+          声調別に彩色
         </div>
         <div className={styles.body_tr}>
           <TextField
             type="text"
             {...register('txtChinese', { required: true })}
-            defaultValue={"当然最主要的原因是七月十四的时候，鸭子发育得正好，肉质肥嫩，入口即化，是吃鸭子的好季节。"}
+            defaultValue={sampleText}
             className={styles.inputfield}
           />
         </div>
@@ -66,10 +71,10 @@ function XxxData() {
             variant="contained"
             color="primary"
             style={{ 'marginRight': '30px' }}
-          >声調彩色</Button>
+          >声即彩色</Button>
 
           <FormControlLabel
-            label="PingYin:"
+            label="PingYin"
             control={
               <Checkbox
                 checked={withPY}
@@ -83,8 +88,17 @@ function XxxData() {
         <div className={styles.body_tr}>
           {
             sounds && (
-              <div className="output">{
+              <div className={styles.output}>{
                 sounds.map((n, i) => <KanjiHTML key={i} item={n} withPY={withPY} />)
+              }</div>
+            )
+          }
+        </div>
+        <div className={styles.body_tr}>
+          {
+            sounds && (
+              <div className={styles.output}>{
+                sounds.map((n, i) => <KanjiHTML key={i} item={n} withPY={!withPY} />)
               }</div>
             )
           }

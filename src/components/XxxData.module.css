@@ -15,20 +15,37 @@ div.body_tr {
 
 div.body_ttl {
   width: auto;
+  height: auto;
   margin: 0;
   margin-top: 20px;
-  padding: 10px;
+  padding: 5px;
   overflow: hidden;
-  font-size: 2rem;
+  font-size: 3rem;
 }
 
-div.output {
+div.body_subttl {
   width: auto;
   margin: 0;
-  margin-top: 20px;
+  padding: 2px;
+  overflow: hidden;
+  font-size: 1.0rem;
+  color: #AAA;
+}
+
+.output {
+  /* display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: left; */
+  /* align-content: space-around; */
+
+  width: auto;
+  margin: 0;
+  margin-top: 10px;
   border: 1px solid #AAA;
   padding: 10px;
   overflow: hidden;
+  text-align: left;
 }
 
 .inputfield {
@@ -44,4 +61,25 @@ div.output {
 
 .pycheck {
   margin-left: 20px;
+}
+
+/* const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato']; */
+.color1 {
+  color: #666;
+}
+
+.color2 {
+  color: DodgerBlue;
+}
+
+.color3 {
+  color: SeaGreen;
+}
+
+.color4 {
+  color: Tomato;
+}
+
+.pron {
+  font-size: 1rem;
 }

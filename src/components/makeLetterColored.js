@@ -1,7 +1,6 @@
 // 字母の発音が2つ以上の時は熟語のヒットを検索する
 // そのために、2~4(max default or 文末)文字の配列を取得
 // 記号やホワイトスペース、数字などは文字の切れ目と判断して中断
-
 const getWordsArray = (sentence, idx, max = 4) => {
   if (idx === undefined || !sentence) return [];
   if (idx < 0 || idx >= sentence.length - 1) return [];
@@ -19,77 +18,64 @@ const getWordsArray = (sentence, idx, max = 4) => {
   return charArr;
 };
 
+const searchDict = ({ buffer, found, keyword, i }) => {
+  //console.log('keyword/found', keyword, found);
 
-//JIBO: [ "你", ["nǐ"], "1" ],[ "好", ["hǎo","hào"], "2" ]
-//TREE: [ "你争我夺", "你死我活", "你们", "你来我往", "你追我赶" ]
-//DICT: {"娃娃": "wá wá", "娃娃亲": "wá wa qīn", "娃娃脸": "wá wá liǎn",}
+  buffer[i] = { 'I': i, 'C': keyword, 'P': found, 'X': true }
 
-const makeLetterColored = ({ sentence, dict, tree, jibo }) => {
-  let arrColoredLetters = []
-  // console.log(Object.keys(dict).length)
-  // console.log(Object.keys(tree).length)
-  // console.log(Object.keys(jibo).length)
+  for (let k = 1; k < keyword.length; k++) {
+    buffer[i + k]['C'] = '';
+    buffer[i + k]['X'] = true;
+  }
+}
 
-  const JIBO_PY = 1
-  const JIBO_NUM = 2
+const makeLetterColored = ({ sentence, dict, extra, jibo }) => {
+  if (!sentence || Object.keys(dict).length === 0 || Object.keys(extra).length === 0) return []
 
-  let arrIdx = 0;
+  let buffer = sentence.split('').map((n, i) => { return { 'I': i, 'C': n, 'P': '', 'X': false } })
+
   for (let i = 0; i < sentence.length; i++) {
-    const kanjiChar = sentence[i];
-    const jiboHit = jibo[kanjiChar];
 
-    if (!jiboHit) { //[1] 字母に記載なし
-      arrColoredLetters.push({
-        idx: arrIdx++, kanjiChar: kanjiChar, sound: '',
-      })
-    }
-    else { //[2] 字母に記載あり、発音１つのみ
-      const jiboMainSound = jiboHit[JIBO_PY][0] || ''
-      //if (!jiboMainSound) continue
+    //1. 文法優先
+    if (['把'].includes(sentence.substr(i, 1))) continue
 
-      if (jiboHit[JIBO_NUM] === '1' || i === sentence.length - 1) {
-        arrColoredLetters.push({
-          idx: arrIdx++, kanjiChar: kanjiChar, sound: jiboMainSound,
-        })
-      } else {
-        let hit = false
-        for (const n of getWordsArray(sentence, i)) {
-          //[3] 熟語Dictに記載あり [ "好人好事", "好几", "好说", , … ]
-          if (tree[kanjiChar].includes(n)) {
+    for (const keyword of getWordsArray(sentence, i)) {
+      //2. 固有名詞辞書
+      //{"安徽": {"P": ["ān", "huī"]}, "合肥": {"P": ["hé", "féi"]}
+      let found = extra[keyword];
+      if (found) {
+        searchDict({ buffer, found, keyword, i })
+        i += keyword.length - 1
+        break;
+      }
 
-            arrColoredLetters.push({
-              idx: arrIdx++, kanjiChar: n, sound: dict[n],
-            })
-            i += n.length - 1  //i カウント修正
-            hit = true
-            break
-          }
-        }
-        if (!hit) {
-          //[4] 熟語Dictに記載なし、字母の複数の発音の中から最初の発音を返す
-          arrColoredLetters.push({
-            idx: arrIdx++, kanjiChar: kanjiChar, sound: jiboMainSound,
-          })
-        }
+      //3. 一般辞書
+      //{"吖": {"P": ["ā"]}, "吖嗪": {"P": ["ā", "qín"]}, "阿": {"P": ["ē"]}, 
+      found = dict[keyword];
+      if (found) {
+        searchDict({ buffer, found, keyword, i })
+        i += keyword.length - 1  //i カウント修正
+        break;
       }
     }
   }
-  // entry: {idx: Number, KanjiChar: String, sound: String, fourIdx:Number }
-  return arrColoredLetters;
+
+  buffer = buffer.filter(elem => elem['C'])
+
+  for (const i in buffer) {
+    if (buffer[i]['X'] || buffer[i]['C'].includes(['，', '。'])) continue;
+
+    //{"一": ["1", ["yī"], "1"], "乙": ["2", ["yǐ"], "1"], 
+    const found = jibo[buffer[i]['C']];
+    if (found && found[1] && found[1][0]) {
+      buffer[i]['P'] = [found[1][0]];
+      buffer[i]['X'] = true;
+    }
+  }
+
+  //console.log(buffer);
+
+  return buffer;
 }
 
 export default makeLetterColored
-
-// Jibo Array(4) [ "你", "", "nǐ", "1" ]
-// Dict undefined
-// Tree Array(5) [ "你争我夺", "你死我活", "你们", "你来我往", "你追我赶" ]
-
-// Jibo Array(4) [ "好", "", "hǎo/hào", "2" ]
-// Dict undefined
-// Tree Array(83) [ "好人好事", "好几", "好说", , … ]
-
-// Jibo Array(4) [ "吗", "嗎", "ma", "1" ]
-// Dict undefined
-// Tree Array [ "吗啡" ]
-
-// Dict {"娃娃": "wá wá", "娃娃亲": "wá wa qīn", "娃娃脸": "wá wá liǎn",

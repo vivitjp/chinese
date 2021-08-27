@@ -1,0 +1,37 @@
+.jukugo {
+  display: inline;
+  box-sizing: border-box;
+  padding: 5px 0;
+  margin: 0 3px;
+  border-bottom: 2px dotted #CCC;
+  font-size: 0;
+}
+
+.kanji {
+  display: inline;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  margin-bottom: 0px;
+  font-size: 40px;
+}
+
+/* <rt> */
+.kanjiSound {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  margin-top: 0px;
+  font-size: 16px;
+  color: #BBB;
+  /* line-height: 0.5rem; NG */
+}
+
+/* <ruby> */
+.kanjiChar {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  font-size: 40px;
+  /* line-height: 1rem; NG */
+}
