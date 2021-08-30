@@ -29,13 +29,14 @@ function XxxData() {
 
   const [dict_main, setDictMain] = useState(null);
   const [dict_extra, setDictExtra] = useState(null);
-  const [dict_jibo, setDictJibo] = useState(null);
+  //const [dict_jibo, setDictJibo] = useState(null);
   const [sounds, setSounds] = useState(null);
   const [sampleidx, setSampleidx] = useState(0);
   const [withNote, setWithNote] = useState(true);
   const [withPY, setWithPY] = useState(true);
 
-  const [testText, setTestText] = useState('');
+  // const [isAllDictReady, setIsAllDictReady] = useState(false);
+  // const [msgText, setMsgText] = useState('');
 
   const idbClassJB = new IndexedDBClass({
     db: { name: "chinesePingYinDic134", version: 2 },
@@ -56,60 +57,27 @@ function XxxData() {
         const res = await getJson("./data/dict_extra.json")
         if (res) { setDictExtra(res) }
       })();
-      // (async () => {
-      //   const res = await getJson("./data/jibo.json")
-      //   if (res) { setDictJibo(res) }
-      // })();
+      (async () => {
+        const con = await idbClassJB.connectIDB();
+        switch (con) {
+          case CON_STATUS.NEW: //新規作成
+            console.log('字母辞書新規/Verアップ開始');
+            const fileName = "./data/jibo_array.json"
+            const res = await getJson(fileName)
+            if (!res) return null;  //FILE OPEN エラー
+
+            console.log('辞書新規/Verアップ');
+            const result = await idbClassJB.addAll(res);  //全登録
+            break;
+          case CON_STATUS.OK: // 辞書存在
+            console.log('字母辞書存在')
+            break;
+          default:
+            console.log('字母辞書取得不可')
+        }
+      })();
     }, []
   );
-
-  const handleTestData = async () => {
-    const key = '一'
-    let dictResult = '';
-
-    const con = await idbClassJB.connectIDB();
-    switch (con) {
-      case CON_STATUS.OK:
-        console.log('辞書既成');
-        dictResult = await idbClassJB.getOne(key)
-        console.log('検索結果: ', dictResult)
-        setTestText(JSON.stringify(dictResult))
-        break;
-      case CON_STATUS.NEW: //新規作成
-        console.log('辞書新規/Verアップ開始');
-        const fileName = "./data/jibo_array.json"
-        const res = await getJson(fileName)
-        if (!res) return null;  //FILE OPEN エラー
-
-        setTestText('辞書再構成開始')
-        //console.log('辞書新規/Verアップ');
-        const result = await idbClassJB.addAll(res);  //全登録
-        console.log(result)
-        dictResult = await idbClassJB.getOne(key)
-        console.log('検索結果: ', dictResult)
-        setTestText(JSON.stringify(dictResult))
-        break;
-      default: //CON_STATUS.ERR
-        console.log('Error');
-        setTestText('Error')
-        break;
-    }
-  }
-
-  // TEST----------------------------------------------------
-  // const handleTestData = async () => {
-  //   const con = await idbClass.connectIDB()
-  //   if (!con) return;
-
-  //   const key = '一'
-  //   const datavalue = await idbClass.getOne(key)
-  //   console.log(datavalue)
-
-  //   const dataAll = await idbClass.getAll()
-  //   console.log(dataAll)
-  //   setTestText(JSON.stringify(dataAll))
-  // }
-  // TEST----------------------------------------------------
 
   // 変換
   const handleChange = (data) => {
@@ -143,73 +111,43 @@ function XxxData() {
 
         <div className={style.body_tr}>
           <div className={style.controlRow}>
-            <ArrowBackIosIcon
-              color="primary"
+            <ArrowBackIosIcon color="primary" variant="Outlined"
               onClick={() => { handleExample('prev') }}
-              variant="Outlined"
             />
             <div className={style.textsamplettl}>サンプル</div>
-            <ArrowForwardIosIcon
-              color="primary"
+            <ArrowForwardIosIcon color="primary" variant="Outlined"
               onClick={() => { handleExample('next') }}
-              variant="Outlined"
             />
           </div>
         </div>
 
         <div className={style.body_tr}>
-          <TextField
-            type="text"
+          <TextField type="text" className={style.inputfield}
             {...register('txtChinese', { required: true })}
             defaultValue={sampleText[0]}
-            className={style.inputfield}
           />
         </div>
 
         <div className={style.body_tr}>
-          {/* <Button
-            onClick={() => { handleSetData() }}
-            className={style.inputbutton}
-            variant="contained"
-            color="secondary"
-            style={{ 'marginRight': '10px' }}
-          >データ</Button> */}
-          <Button
-            onClick={() => { handleTestData() }}
-            className={style.inputbutton}
-            variant="contained"
-            color="secondary"
-            style={{ 'marginRight': '10px' }}
-          >Test</Button>
-
-          <Button
+          <Button color="primary" variant="contained" className={style.inputbutton}
             onClick={handleSubmit(handleChange)}
-            className={style.inputbutton}
-            variant="contained"
-            color="primary"
             style={{ 'marginRight': '30px' }}
           >声調彩色</Button>
 
-          <FormControlLabel
-            label="拼音"
+          <FormControlLabel label="拼音"
             control={
-              <Checkbox
-                checked={withPY}
+              <Checkbox className={style.pycheck} checked={withPY}
                 onChange={() => setWithPY(!withPY)}
                 inputProps={{ 'aria-label': 'controlled' }}
-                className={style.pycheck}
               />
             }
           />
 
-          <FormControlLabel
-            label="凡例"
+          <FormControlLabel label="凡例"
             control={
-              <Checkbox
-                checked={withNote}
+              <Checkbox className={style.pycheck} checked={withNote}
                 onChange={() => setWithNote(!withNote)}
                 inputProps={{ 'aria-label': 'controlled' }}
-                className={style.pycheck}
               />
             }
           />
@@ -225,22 +163,10 @@ function XxxData() {
             )
           }
         </div>
-        <div className={style.body_tr} style={{ fontSize: '20px' }}>{testText}</div>
+        {/* <div className={style.body_tr} style={{ fontSize: '20px' }}>{testText}</div> */}
       </div>
     </>
   )
 }
 
 export default XxxData;
-
-// 每年七月十四的时候，父母就会提醒：“今晚记得回家吃饭哦！”。据民间传说七月十五是ghost门大开、百ghost夜行的日子，过了七月十四就是七月十五，所以吃完饭，父母还不忘提醒：“今晚没事不要出门！”
-
-// 我家会在七月十四，把家里先人遗照、牌位请出来，进行祭拜。晚上的时候，在路边、在树下，时常有路人，点燃蜡烛、焚烧纸钱、摆上祭品，进行祭拜。
-
-// 至于七月十四餐桌上的美食，自然少不了鸭子，在南宁鸭子的做法有很多：柠檬鸭、白切鸭、闷烧鸭、烧鸭等等。
-
-// 为什么要在七月十四吃鸭子，民间的传说很多，大家有兴趣的，可以去搜索了解下。
-
-// 当然最主要的原因是七月十四的时候，鸭子发育得正好，肉质肥嫩，入口即化，是吃鸭子的好季节。
-
-// 在本地，我们都会选择好的鸭子品种来制作，比如土鸭、樱桃鸭、青头鸭，这些鸭子够土，肉质紧实。

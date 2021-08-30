@@ -59,7 +59,7 @@ const searchDict = ({
 // 
 //
 // ===========================================================
-const makeLetterColored = ({
+const makeLetterColored = async ({
   sentence,    //文字列
   dict_main,   //メイン辞書  // 例: {"吖": {"P": ["ā"]}, "吖嗪": {"P": ["ā", "qín"]}, "阿": {"P": ["ē"]}, 
   dict_extra,  //優先辞書(固有名詞、文法的) // 例: {"安徽": {"P": ["ān", "huī"]}, "合肥": {"P": ["hé", "féi"]}
@@ -114,13 +114,14 @@ const makeLetterColored = ({
   for (const i in buffer) {
     if (buffer[i].isFound || buffer[i].WORD.includes(['，', '。'])) continue;
 
-    const found = idbClassJB.getOne([buffer[i].WORD]);
+    const found = await idbClassJB.getOne([buffer[i].WORD]);
 
     if (found && found[1] && found[1][0]) {
       buffer[i].PRON = { 'P': [found[1][0]] };  //辞書の形式に統一
       buffer[i].isFound = true;
     }
   }
+
   console.log(buffer);
 
   return buffer;

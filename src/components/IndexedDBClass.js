@@ -2,10 +2,15 @@
 //   db: { name: "chinesePingYinDic125", version: 1 },
 //   store: {
 //     name: "jibo",
-//     //storeOptions: { keyPath: "idx", autoIncrement: true },  <<--Firefox 必須!!!!
-//     storeOptions: { keyPath: "", autoIncrement: false },
-//     indexes: [
-//       { idxName: "JB", unique: true },
+//     // 1) storeOptions 必須
+//     storeOptions: { keyPath: "idx", autoIncrement: true },
+//     indexes: [  //main key 以外の検索用 index 作成
+//       { idxName: "JB", unique: false },  
+//     ]
+//
+//     2) storeOptions: { keyPath: "JB", autoIncrement: false },   <<--Firefox 必須!!!!
+//     indexes: [  //これは main key 以外の
+//       { idxName: "JB", unique: true },  
 //     ]
 //   }
 // });
@@ -26,13 +31,14 @@ class IndexedDBClass { // extends Promise
         //既存の DB name が同じ
         request.onsuccess = (event) => {
           this.db = event.target.result;
+          console.log('IndexedDBClass', 'connectIDB', 'onsuccess')
           resolve(CON_STATUS.OK);
         }
 
         //既存の DB name と異なる
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
-          console.log('onupgradeneeded: ', typeof db.objectStoreNames);
+          console.log('IndexedDBClass', 'onupgradeneeded: ', this.storeObj.name);
 
           if (!Array.from(db.objectStoreNames).includes(this.storeObj.name)) {
             console.log('onupgradeneeded: ', this.storeObj.name, this.storeObj.storeOptions);
@@ -56,6 +62,56 @@ class IndexedDBClass { // extends Promise
     });
   }
 
+
+
+  //==============================
+  // 追加(put) 複数 (戻り値: Boolean; 最終保存終了後)
+  //==============================
+  addDict({ idbObj, dictPath }) {
+
+    const idbClassJB = new IndexedDBClass({
+      db: { name: "chinesePingYinDic134", version: 2 },
+      store: {
+        name: "jibo",
+        storeOptions: { keyPath: "JB", autoIncrement: false },
+        indexes: []
+      }
+    });
+
+
+    if (!this.db || !data) { console.log('addAll Error', !!this.db, !!data); return null; }
+
+  }
+
+  //==============================
+  // 追加(put) 複数 (戻り値: Boolean; 最終保存終了後)
+  //==============================
+  addAll(data) {  //data=[{'KEY':VALUE,'TTL1':VALUE,...},{'KEY':VALUE,...}]
+    if (!this.db || !data) { console.log('addAll Error', !!this.db, !!data); return null; }
+
+    return new Promise((resolve, reject) => {
+      //console.log('this.storeObj.name', this.storeObj.name)
+
+      const transaction = this.db.transaction(this.storeObj.name, "readwrite");
+      const objectStore = transaction.objectStore(this.storeObj.name);
+
+      //objectStore.addAll(data); //Chrome OK, Firefox NG(後日変更)
+
+      for (const n of [...data]) {
+        objectStore.add(n);
+        //console.log(n);   //ここにmicro treansaction
+      }
+
+      //全挿入終了後
+      transaction.oncomplete = function () {
+        console.log("addAll Transaction is complete");
+        resolve(true);
+      }
+    });
+  }
+
+
+
   //==============================
   // 追加(add) 1行追加(戻り値: id)
   //==============================
@@ -77,32 +133,6 @@ class IndexedDBClass { // extends Promise
     });
   }
 
-  //==============================
-  // 追加(put) 複数 (戻り値: Boolean; 最終保存終了後)
-  //==============================
-  addAll(data) {  //data=[{'KEY':VALUE,'TTL1':VALUE,...},{'KEY':VALUE,...}]
-    if (!this.db || !data) { console.log('addAll Error', !!this.db, !!data); return null; }
-
-    return new Promise((resolve, reject) => {
-      //console.log('this.storeObj.name', this.storeObj.name)
-
-      const transaction = this.db.transaction(this.storeObj.name, "readwrite");
-      const objectStore = transaction.objectStore(this.storeObj.name);
-
-      //objectStore.addAll(data); //Chrome OK, Firefox NG(後日変更)
-
-      for (const n of [...data]) {
-        objectStore.add(n);
-        //console.log(n)
-      }
-
-      //全挿入終了後
-      transaction.oncomplete = function () {
-        //console.log("addAll Transaction is complete");
-        resolve(true);
-      }
-    });
-  }
 
   //==============================
   // 取得(１件)
