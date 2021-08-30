@@ -2,81 +2,73 @@ import React from 'react'
 import style from './KanjiHTML.module.css'
 import { getChineseAccentNum } from './chineseSoundFuncs'
 
-const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato'];
-
 //=======================================
 //  
 //=======================================
-export const KanjiHTML = ({ item, withPY }) => {
+export const KanjiHTML = ({ item, dispType, colors }) => {
 
   //console.log(item)
-  //{ 'I': n, 'C': '有',   'P': ['you'], 'X': true }
-  //{ 'I': n, 'C': '出来', 'P': ["chū","lái"], 'X': true }
+  //{ 'I': n, 'WORD': '有',   'P': ['you'], 'isFound': true }   //'P'に注意(辞書内では'P')
+  //{ 'I': n, 'WORD': '出来', 'P': ["chū","lái"], 'isFound': true }
 
-  //文字以外
-  if (!item.X) {
+  //発見されたもの以外
+  if (!item.isFound) {
     return (
-      <span key={item.I} className={style.kanji}>
-        {item.C}
-      </span>
+      <span key={item.I} className={style.kanji}>{item.WORD}</span>
     )
   }
 
-  //単語
-  if (item['P'].length === 1) {
-    return (
-      withPY ? KanjiHTMLUnitCoreRuby({ item }) : KanjiHTMLUnitCore({ item })
-    )
-  }
-  //熟語
-  else {
-    let chars = item.C.split('')
-    let sounds = item.P
+  let chars = item.WORD.split('')
 
-    return (
-      <div className={style.jukugo}>
+  return (
+    <>
+      <div className={style.jukugo} style={chars.length > 1 ? { borderBottom: "2px dotted #CCC" } : {}}>
         {
           chars.map((n, i) => { //1文字ずつ配列化
-            //console.log('Chars', chars[i], sounds['P'][i])
+            //console.log('Chars', chars[i], item.PRON['P'][i])
+
             const idx = parseInt(item.I) + (i + 1)
-            const obj = { item: { 'I': idx, 'C': chars[i], 'P': [sounds.P[i]] } }
-            if (withPY) return KanjiHTMLUnitCoreRuby(obj)
-            else return KanjiHTMLUnitCore(obj)
+            const obj = { item: { 'I': idx, 'WORD': chars[i], 'PRON': item.PRON['P'][i] || '' } }
+            switch (dispType) {
+              case 1: return KanjiHTMLUnitCore(colors, { ...obj, ...{ colored: false } });
+              case 2: return KanjiHTMLUnitCore(colors, obj);
+              case 3: return KanjiHTMLUnitCoreRuby(colors, obj);
+              default: return null;
+            }
           })
         }
       </div>
-    )
-  }
+    </>
+  )
 }
 
 //=======================================
-//  Ruby なし
+//  原文 / 拼音 Ruby なし
 //=======================================
-const KanjiHTMLUnitCore = ({ item }) => {
-  const soundNum = getChineseAccentNum(...item.P) || 0
+const KanjiHTMLUnitCore = (colors, { item, colored = true }) => {
+  const soundNum = getChineseAccentNum(item.PRON) || 0
   // console.log(item)
-  // { 'I': n, 'C': '有',   'P': ['you'], 'X': true }
-  // { 'I': n, 'C': '出来', 'P': ["chū","lái"], 'X': true }
 
   return (
-    <div key={item.I} className={style.kanji} style={{ color: colors[soundNum] }}>
-      {item.C}
+    <div key={item.I} className={style.kanji} lang="zh-Hans" translate="no"
+      style={colored ? { color: colors[soundNum] } : { color: '#555' }}>
+      {item.WORD}
     </div>
   )
 }
 
 //=======================================
-//  Ruby 付き
+//  拼音 Ruby 付き
 //=======================================
-const KanjiHTMLUnitCoreRuby = ({ item }) => {
-  const soundNum = getChineseAccentNum(...item.P || 0)
+const KanjiHTMLUnitCoreRuby = (colors, { item }) => {
+  const soundNum = getChineseAccentNum(item.PRON || 0)
   //  console.log(item)
 
   return (
     <div key={item.I} className={style.kanji}>
-      <ruby className={style.kanjiChar} style={{ color: colors[soundNum] }}>
-        {item.C}
-        <rt className={style.kanjiSound}>{item.P}</rt>
+      <ruby lang="zh-Hans" translate="no" className={style.kanjiChar} style={{ color: colors[soundNum] }}>
+        {item.WORD}
+        <rt className={style.kanjiSound}>{item.PRON}</rt>
       </ruby>
     </div>
   )
