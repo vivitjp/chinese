@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { getJson } from '../api/getJson';
 import makeLetterColored from './makeLetterColored'
 import { KanjiHTML } from './KanjiHTML';
 import PinYinColorExplain from './PinYinColorExplain'
 
-import IndexedDBClass, { CON_STATUS } from './IndexedDBClass'
+import IndexedDBClass from './IndexedDBClass'
+import IndexedDB4Dict from './IndexedDB4Dict'
+
 
 import style from './XxxData.module.css'
 
@@ -24,13 +25,41 @@ const sampleText = [
   "在本地，我们都会选择好的鸭子品种来制作，比如土鸭、樱桃鸭、青头鸭，这些鸭子够土，肉质紧实。",
 ];
 
+const idbClassJB = new IndexedDBClass({
+  db: { name: "dict_jibo", version: 1 },
+  store: {
+    name: "jibo",
+    storeOptions: { keyPath: "JB", autoIncrement: false },
+    indexes: []
+  },
+  file: "./data/jibo_array.json"
+});
+
+const idbClassExtra = new IndexedDBClass({
+  db: { name: "dict_extra", version: 1 },
+  store: {
+    name: "extra",
+    storeOptions: { keyPath: "W", autoIncrement: false },
+    indexes: []
+  },
+  file: "./data/dict_extra_array.json"
+});
+
+const idbClassMain = new IndexedDBClass({
+  db: { name: "dict_main", version: 1 },
+  store: {
+    name: "mains",
+    storeOptions: { keyPath: "W", autoIncrement: false },
+    indexes: []
+  },
+  file: "./data/dict_main_array.json"
+});
+
+
 function XxxData() {
   const { register, handleSubmit, setValue } = useForm();
 
-  const [dict_main, setDictMain] = useState(null);
-  const [dict_extra, setDictExtra] = useState(null);
-  //const [dict_jibo, setDictJibo] = useState(null);
-  const [sounds, setSounds] = useState(null);
+  const [sounds, setSounds] = useState([]);
   const [sampleidx, setSampleidx] = useState(0);
   const [withNote, setWithNote] = useState(true);
   const [withPY, setWithPY] = useState(true);
@@ -38,56 +67,38 @@ function XxxData() {
   // const [isAllDictReady, setIsAllDictReady] = useState(false);
   // const [msgText, setMsgText] = useState('');
 
-  const idbClassJB = new IndexedDBClass({
-    db: { name: "chinesePingYinDic134", version: 2 },
-    store: {
-      name: "jibo",
-      storeOptions: { keyPath: "JB", autoIncrement: false },
-      indexes: []
-    }
-  });
+  useEffect(
+    () => {
+      (async () => { await IndexedDB4Dict({ idbClass: idbClassMain }) })();
+    }, []
+  );
 
   useEffect(
     () => {
-      (async () => {
-        const res = await getJson("./data/dict_main.json")
-        if (res) { setDictMain(res) }
-      })();
-      (async () => {
-        const res = await getJson("./data/dict_extra.json")
-        if (res) { setDictExtra(res) }
-      })();
-      (async () => {
-        const con = await idbClassJB.connectIDB();
-        switch (con) {
-          case CON_STATUS.NEW: //新規作成
-            console.log('字母辞書新規/Verアップ開始');
-            const fileName = "./data/jibo_array.json"
-            const res = await getJson(fileName)
-            if (!res) return null;  //FILE OPEN エラー
-
-            console.log('辞書新規/Verアップ');
-            const result = await idbClassJB.addAll(res);  //全登録
-            break;
-          case CON_STATUS.OK: // 辞書存在
-            console.log('字母辞書存在')
-            break;
-          default:
-            console.log('字母辞書取得不可')
-        }
-      })();
+      (async () => { await IndexedDB4Dict({ idbClass: idbClassExtra }) })();
+    }, []
+  );
+  useEffect(
+    () => {
+      (async () => { await IndexedDB4Dict({ idbClass: idbClassJB }) })();
     }, []
   );
 
   // 変換
   const handleChange = (data) => {
-    let sentence = data.txtChinese;
-    if (!sentence) return
-    const res = makeLetterColored({ sentence, dict_main, dict_extra, idbClassJB })
-    if (res) setSounds(res)
+    //console.log('handleChange');
+    (async () => {
+      let sentence = data.txtChinese;
+      if (!sentence) return
+      const res = await makeLetterColored({ sentence, idbClassMain, idbClassExtra, idbClassJB })
+      //console.log(res);
+      if (res) setSounds(res)
+    })();
   }
 
-  const handleExample = (dir) => {
+  //サンプル文章取得
+  const handleSample = (dir) => {
+    console.log('handleSample Called')
     const sampleSize = sampleText.length;
     let newidx = null;
     if (dir === 'prev') { //前に
@@ -112,11 +123,11 @@ function XxxData() {
         <div className={style.body_tr}>
           <div className={style.controlRow}>
             <ArrowBackIosIcon color="primary" variant="Outlined"
-              onClick={() => { handleExample('prev') }}
+              onClick={() => { handleSample('prev') }}
             />
             <div className={style.textsamplettl}>サンプル</div>
             <ArrowForwardIosIcon color="primary" variant="Outlined"
-              onClick={() => { handleExample('next') }}
+              onClick={() => { handleSample('next') }}
             />
           </div>
         </div>

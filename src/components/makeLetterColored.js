@@ -60,16 +60,12 @@ const searchDict = ({
 //
 // ===========================================================
 const makeLetterColored = async ({
-  sentence,    //文字列
-  dict_main,   //メイン辞書  // 例: {"吖": {"P": ["ā"]}, "吖嗪": {"P": ["ā", "qín"]}, "阿": {"P": ["ē"]}, 
-  dict_extra,  //優先辞書(固有名詞、文法的) // 例: {"安徽": {"P": ["ān", "huī"]}, "合肥": {"P": ["hé", "féi"]}
-  idbClassJB,   //字母辞書(字母:["番号",["発音1","発音2"],"発音個数"])  // 例: {"乙": ["2", ["yǐ"], "1"]}
+  sentence,       //文字列
+  idbClassMain,      //メイン辞書  // 例: {"吖": {"P": ["ā"]}, "吖嗪": {"P": ["ā", "qín"]}, "阿": {"P": ["ē"]}, 
+  idbClassExtra,  //優先辞書(固有名詞、文法的) // 例: {"安徽": {"P": ["ān", "huī"]}, "合肥": {"P": ["hé", "féi"]}
+  idbClassJB,     //字母辞書(字母:["番号",["発音1","発音2"],"発音個数"])  // 例: {"乙": ["2", ["yǐ"], "1"]}
 }) => {
-  if (!sentence ||
-    Object.keys(dict_main).length === 0 ||
-    Object.keys(dict_extra).length === 0 ||
-    !idbClassJB
-  ) return []
+  if (!sentence || !idbClassMain || !idbClassExtra || !idbClassJB) return []
 
   let buffer = sentence.split('').map((n, i) => {
     return {
@@ -81,6 +77,8 @@ const makeLetterColored = async ({
     }
   })
 
+  //console.log(2, sentence)
+
   // 辞書検索
   for (let i = 0; i < sentence.length; i++) {
 
@@ -89,18 +87,22 @@ const makeLetterColored = async ({
 
     // 辞書照会用の文字列配列取得して回す
     for (const keyword of getWordsArray(sentence, i)) {
+      //console.log('辞書検索', keyword)
+
       //2. 優先辞書
-      let found = dict_extra[keyword];
-      if (found) {
-        searchDict({ buffer, found, keyword, i })
+      const exFound = await idbClassExtra.getOne(keyword);
+      if (exFound) {
+        //console.log('発見(優先)', JSON.stringify(exFound))
+        searchDict({ buffer, found: exFound, keyword, i })
         i += keyword.length - 1
         break;
       }
 
       //3. 一般辞書
-      found = dict_main[keyword];
-      if (found) {
-        searchDict({ buffer, found, keyword, i })
+      const mainFound = await idbClassMain.getOne(keyword);
+      if (mainFound) {
+        //console.log('発見(一般)', JSON.stringify(mainFound))
+        searchDict({ buffer, found: mainFound, keyword, i })
         i += keyword.length - 1  //i カウント修正
         break;
       }
@@ -114,15 +116,25 @@ const makeLetterColored = async ({
   for (const i in buffer) {
     if (buffer[i].isFound || buffer[i].WORD.includes(['，', '。'])) continue;
 
-    const found = await idbClassJB.getOne([buffer[i].WORD]);
+    const found = await idbClassJB.getOne(buffer[i].WORD);
+    //console.log('found', buffer[i].WORD, found)
 
-    if (found && found[1] && found[1][0]) {
-      buffer[i].PRON = { 'P': [found[1][0]] };  //辞書の形式に統一
+    if (found && found.SD[0]) {
+      buffer[i].PRON = { 'S': [found.SD[0]] };  //辞書の形式に統一
       buffer[i].isFound = true;
     }
   }
 
-  console.log(buffer);
+  //console.log(5)
+  //console.log(buffer);
+
+  // Array(9) [ {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…} ]
+  // 0: Object { I: 0, WORD: "当然", isFound: true, … }
+  // I: 0
+  // PRON: Object { W: "当然", S: (2) […] }
+  // WORD: "当然"
+  // isDeletable: false
+  // isFound: true
 
   return buffer;
 }

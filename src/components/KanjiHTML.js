@@ -26,9 +26,8 @@ export const KanjiHTML = ({ item, dispType, colors }) => {
         {
           chars.map((n, i) => { //1文字ずつ配列化
             //console.log('Chars', chars[i], item.PRON['P'][i])
-
             const idx = parseInt(item.I) + (i + 1)
-            const obj = { item: { 'I': idx, 'WORD': chars[i], 'PRON': item.PRON['P'][i] || '' } }
+            const obj = { item: { 'I': idx, 'WORD': chars[i], 'PRON': item.PRON['S'][i] || '' } }
             switch (dispType) {
               case 1: return KanjiHTMLUnitCore(colors, { ...obj, ...{ colored: false } });
               case 2: return KanjiHTMLUnitCore(colors, obj);

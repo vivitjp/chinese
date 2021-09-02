@@ -1,18 +1,26 @@
 .jukugo {
   display: inline;
   box-sizing: border-box;
-  padding: 5px 0;
+  padding: 0;
   margin: 0 3px;
+  height: auto;
+  overflow: hidden;
   /* border-bottom: 2px dotted #CCC; */
+
+  line-height: 1rem;
   font-size: 0;
 }
 
 .kanji {
-  display: inline;
+  display: inline-block;
   box-sizing: border-box;
   padding: 0;
   margin: 0;
   margin-bottom: 0px;
+  height: auto;
+  overflow: hidden;
+
+  line-height: 1rem;
   font-size: 30px;
   font-family: "Microsoft Yahei", "PingHei", "sans-serif";
 }
