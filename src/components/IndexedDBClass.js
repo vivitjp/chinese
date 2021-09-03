@@ -37,8 +37,7 @@ class IndexedDBClass { // extends Promise
         const request = window.indexedDB.open(this.dbObj.name, this.dbObj.version);
 
         //■ 既存の DB name が同じ
-        request.onsuccess = (event) => {
-          //event.target.result;
+        request.onsuccess = (event) => {     //event.target.result;
           //= IDBDatabase { name: "china4", version: 2, objectStoreNames: DOMStringList(1), onabort: null, onclose: null, onerror: null, onversionchange: null }
           console.log('IndexedDBClass', 'connectIDB', 'onsuccess')
           this.status = idbSTATUS.OK;
@@ -53,22 +52,21 @@ class IndexedDBClass { // extends Promise
           const db = event.target.result;
           console.log('IndexedDBClass', 'onupgradeneeded(before): ', this.storeObj.name);
 
+          //console.log('objectStoreNames', JSON.stringify(db.objectStoreNames))
           if (!Array.from(db.objectStoreNames).includes(this.storeObj.name)) {
-            //console.log('objectStoreNames', JSON.stringify(db.objectStoreNames))
             const objectStore = db.createObjectStore(this.storeObj.name, this.storeObj.storeOptions);
-
             //index のコピー
-            if (!this.storeObj.indexes) return;
-            //console.log(this.storeObj.indexes)
-            for (const idx of this.storeObj.indexes) {
-              objectStore.createIndex(idx.idxName, idx.idxName, { unique: idx.unique });
+            if (this.storeObj.indexes) {
+              for (const idx of this.storeObj.indexes) {
+                objectStore.createIndex(idx.idxName, idx.idxName, { unique: idx.unique });
+              }
             }
             this.status = idbSTATUS.OK
-            //console.log('getStatus', 'request.onupgradeneeded(1)', this.status)
+            console.log('getStatus', 'request.onupgradeneeded(1)', this.status)
             resolve(idbSTATUS.NEW);
           } else {
             this.status = idbSTATUS.OK
-            //console.log('getStatus', 'request.onupgradeneeded(2)', this.status)
+            console.log('getStatus', 'request.onupgradeneeded(2)', this.status)
             resolve(idbSTATUS.OK);  //ここの処理不明
           }
           // const dbReqRes = request.result  エラー発生
@@ -104,8 +102,11 @@ class IndexedDBClass { // extends Promise
           // console.log(data.length)
           // console.log(data)
 
-          for (const n of [...data]) { //console.log(n)
-            objStore.put(n);           //PUT ここに micro treansaction 入れると fail
+          for (const n of [...data]) { //add では Error が表示されない
+            let putRes = objStore.put(n);           //PUT!!! ここに micro treansaction 入れると fail
+            putRes.onerror = (event) => {
+              console.log('PUT Error', JSON)
+            }
           }
           db.close();
           resolve(idbSTATUS.OK);

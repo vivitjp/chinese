@@ -1,3 +1,5 @@
+import { z2h_zh, z2h_en } from '../lib/z2h_zh'
+
 // ===========================================================
 // ローカル関数
 // 文章を走査、idx 番目の文字から、字数 max を切り取り配列に
@@ -40,12 +42,12 @@ const searchDict = ({
 }) => {
   //console.log('keyword/found', keyword, found);
 
-  buffer[i] = {    // Buffer の idx 番目の内容を置換え
-    I: i,        // react map用のindex
-    WORD: keyword,  // 字母
-    PRON: found,    // 見つかった辞書のオブジェクト(上参照) 拡張可能
-    isFound: true,     // 検索終了Boolean
-    isDeletable: false,    // Delete Flag = false (有効な要素)
+  buffer[i] = {          // Buffer の idx 番目の内容を置換え
+    idx: i,              // react map用のindex
+    word: keyword,       //
+    entry: found,        // 見つかった辞書のオブジェクト(上参照) 拡張可能
+    isFound: true,       // 検索終了Boolean
+    isDeletable: false,  // Delete Flag = false (有効な要素)
   }
 
   // 熟語と判明した部分(idxの次から文字数)に ['isDeletable'] Delete flag = true
@@ -60,37 +62,36 @@ const searchDict = ({
 //
 // ===========================================================
 const makeLetterColored = async ({
-  sentence,       //文字列
-  idbClassMain,      //メイン辞書  // 例: {"吖": {"P": ["ā"]}, "吖嗪": {"P": ["ā", "qín"]}, "阿": {"P": ["ē"]}, 
-  idbClassExtra,  //優先辞書(固有名詞、文法的) // 例: {"安徽": {"P": ["ān", "huī"]}, "合肥": {"P": ["hé", "féi"]}
-  idbClassJB,     //字母辞書(字母:["番号",["発音1","発音2"],"発音個数"])  // 例: {"乙": ["2", ["yǐ"], "1"]}
+  sentence,  //文字列
+  idbJibo,   //字母: [{"W": "一", "S": ["yī"]}, {"W": "乙", "S": ["yǐ"]}]
+  idbMain,   //Main: 
+  idbPron,   //固有: [{"W": "安徽", "S": ["ān", "huī"]}]
+  idbExtra,  //優先: [{"W": "行不行", "S": ["xíngbùxíng"]}]
 }) => {
-  if (!sentence || !idbClassMain || !idbClassExtra || !idbClassJB) return []
+  if (!sentence || !idbMain || !idbExtra || !idbJibo || !idbPron) return []
 
-  let buffer = sentence.split('').map((n, i) => {
+  const altSentence = z2h_zh(z2h_en(sentence))
+
+  //入力文字列から配列作成(この配列を走査、更新して戻す)
+  let buffer = altSentence.split('').map((n, i) => {
     return {
-      I: i,
-      WORD: n,
-      PRON: '',     //
-      isFound: false,  //検索終了
+      idx: i,              // Index
+      word: n,             // 単語
+      entry: { "W": n, "S": [] },     // 辞書のエントリそのままコピー(後日の拡張のために)
+      isFound: false,      //検索終了
       isDeletable: false,  //削除OK flag(熟語の一部)
     }
   })
 
-  //console.log(2, sentence)
-
   // 辞書検索
   for (let i = 0; i < sentence.length; i++) {
-
-    //1. 文法優先
-    if (['把'].includes(sentence.substr(i, 1))) continue
 
     // 辞書照会用の文字列配列取得して回す
     for (const keyword of getWordsArray(sentence, i)) {
       //console.log('辞書検索', keyword)
 
-      //2. 優先辞書
-      const exFound = await idbClassExtra.getOne(keyword);
+      //4. 優先辞書(Extra)
+      const exFound = await idbExtra.getOne(keyword);
       if (exFound) {
         //console.log('発見(優先)', JSON.stringify(exFound))
         searchDict({ buffer, found: exFound, keyword, i })
@@ -98,8 +99,17 @@ const makeLetterColored = async ({
         break;
       }
 
-      //3. 一般辞書
-      const mainFound = await idbClassMain.getOne(keyword);
+      //3. 固有名詞(Pronoun)
+      const proFound = await idbPron.getOne(keyword);
+      if (proFound) {
+        //console.log('発見(固有)', JSON.stringify(proFound))
+        searchDict({ buffer, found: proFound, keyword, i })
+        i += keyword.length - 1
+        break;
+      }
+
+      //2. 一般辞書
+      const mainFound = await idbMain.getOne(keyword);
       if (mainFound) {
         //console.log('発見(一般)', JSON.stringify(mainFound))
         searchDict({ buffer, found: mainFound, keyword, i })
@@ -112,31 +122,29 @@ const makeLetterColored = async ({
   //[重要] 配列再整理: 空白(熟語発見による)削除
   buffer = buffer.filter(elem => !elem.isDeletable)  //'isDeletable'==true 以外を残す
 
-  //4. 辞書にない字母(非熟語)には字母辞書から発音取得(複数ある時はindex[0]のもの取得)
+  //1. 辞書にない字母(非熟語)には字母辞書から発音取得(複数ある時は[0]取得)
   for (const i in buffer) {
-    if (buffer[i].isFound || buffer[i].WORD.includes(['，', '。'])) continue;
+    if (buffer[i].isFound || buffer[i].word.includes(['，', '。'])) continue;
 
-    const found = await idbClassJB.getOne(buffer[i].WORD);
-    //console.log('found', buffer[i].WORD, found)
+    const found = await idbJibo.getOne(buffer[i].word);
+    //console.log('found', buffer[i].word, found)
 
-    if (found && found.SD[0]) {
-      buffer[i].PRON = { 'S': [found.SD[0]] };  //辞書の形式に統一
+    if (found && found["S"][0]) {   //'S':発音配列
+      buffer[i].entry = { 'W': buffer[i].word, 'S': found["S"] };  //[0]取得->辞書形式統一
       buffer[i].isFound = true;
     }
   }
-
-  //console.log(5)
-  //console.log(buffer);
-
-  // Array(9) [ {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…} ]
-  // 0: Object { I: 0, WORD: "当然", isFound: true, … }
-  // I: 0
-  // PRON: Object { W: "当然", S: (2) […] }
-  // WORD: "当然"
-  // isDeletable: false
-  // isFound: true
-
+  console.log(buffer);
   return buffer;
 }
 
 export default makeLetterColored
+
+// 0: Object { idx: 0, word: "当然", isFound: true, … }
+// ​​entry: Object { W: "当然", S: (2) […] }
+//    ​​S: Array [ "dānɡ", "rán" ]
+//    ​​W: "当然"
+// ​​idx: 0
+// ​​isDeletable: false
+// ​​isFound: true
+// ​​word: "当然"

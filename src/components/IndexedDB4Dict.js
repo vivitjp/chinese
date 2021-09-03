@@ -18,6 +18,7 @@ const IndexedDB4Dict = async ({ idbClass }) => {
         // const startTime = Date.now(); // 開始時間
         // console.log('addAll Start', startTime)
 
+        console.log('idbClass.file: SIZE: ', Object.keys(res).length)
         const resAdd = await idbClass.addAll(res);   //全登録
 
         // console.log('addAll Result', resAdd)

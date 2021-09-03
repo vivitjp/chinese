@@ -1,32 +1,36 @@
 .jukugo {
-  display: inline;
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0 3px;
-  height: auto;
-  overflow: hidden;
-  /* border-bottom: 2px dotted #CCC; */
-
-  line-height: 1rem;
-  font-size: 0;
-}
-
-.kanji {
   display: inline-block;
   box-sizing: border-box;
   padding: 0;
-  margin: 0;
-  margin-bottom: 0px;
-  height: auto;
+  margin: 1px 2px;
+  margin-bottom: 6px;
+  /* height: auto; */
   overflow: hidden;
+  /* border-bottom: 2px dotted #CCC; */
 
-  line-height: 1rem;
-  font-size: 30px;
-  font-family: "Microsoft Yahei", "PingHei", "sans-serif";
+  /* line-height: 1rem; */
+  font-size: 0;
+  vertical-align: baseline;
+  /* border: 1px solid red; */
 }
 
-/* <rt> */
+.kanjiSet {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 1px;
+  margin: 0;
+  margin-bottom: 0px;
+  overflow: hidden;
+
+  /* line-height: 1rem; */
+  font-size: 20px;
+  font-family: "Microsoft Yahei", "PingHei", "sans-serif";
+  vertical-align: baseline;
+  /* border: 1px solid blue; */
+}
+
 .kanjiSound {
+  display: block;
   box-sizing: border-box;
   padding: 0;
   margin: 0;
@@ -34,10 +38,11 @@
   font-size: 12px;
   color: #BBB;
   /* line-height: 0.5rem; NG */
+  text-align: center;
 }
 
-/* <ruby> */
 .kanjiChar {
+  display: block;
   box-sizing: border-box;
   padding: 0;
   margin: 0;

@@ -33,23 +33,26 @@ div.body_subttl {
 }
 
 .output {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: baseline;
+  display: block;
   width: auto;
+  height: auto;
   margin: 0;
   padding: 10px;
   overflow: hidden;
   border: 1px solid #AAA;
   text-align: left;
-  line-height: 2rem;
+  font-size: 0;
 }
 
 .inputfield {
-  width: 90%;
+  width: 60%;
   font-size: 20px;
 }
 
 .inputbutton {
-  padding: 5px 20px;
-  font-size: 16px;
   margin-right: 20px;
 }
 
@@ -72,7 +75,7 @@ div.body_subttl {
   margin-left: 20px;
 }
 
-/* const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato']; */
+/* const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato', '#555']; */
 .color1 {
   color: #666;
 }
