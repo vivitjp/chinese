@@ -15,15 +15,6 @@ import ArrowBackIosIcon from '@material-ui/icons/ArrowBackIos';
 import ArrowForwardIosIcon from '@material-ui/icons/ArrowForwardIos';
 
 const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato'];
-// const sampleText = [
-//   "时候，父母就会提醒：“今晚记得回家吃饭哦！”。",
-//   "当然Keeth,最主要的行动原因银行行不行",
-//   "每年七月十四的时候，父母就会提醒：“今晚记得回家吃饭哦！”。",
-//   "据民间传说七月十五是ghost门大开、百ghost夜行的日子",
-//   "过了七月十四就是七月十五，所以吃完饭，父母还不忘提醒：“今晚没事不要出门！",
-//   "我家会在七月十四，把家里先人遗照、牌位请出来，进行祭拜。",
-//   "晚上的时候，在路边、在树下，时常有路人，点燃蜡烛、焚烧纸钱、摆上祭品，进行祭拜。",
-// ];
 
 const idbJibo = new IndexedDBClass({
   db: { name: "dict_1_jibo", version: 1 },
@@ -44,13 +35,13 @@ const idbPron = new IndexedDBClass({
 });
 
 const idbExtra = new IndexedDBClass({
-  db: { name: "dict_4_extra1", version: 1 },
+  db: { name: "dict_4_extra", version: 1 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
   file: "./data/dict_4_extra.json"
 });
 
 const idbSample = new IndexedDBClass({
-  db: { name: "dict_5_sample1", version: 1 },
+  db: { name: "dict_5_sample", version: 1 },
   store: { name: "sampl", storeOptions: { keyPath: "idx", autoIncrement: true }, },
   file: "./data/sentence_akazukin.json"
 });
