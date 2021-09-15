@@ -3,6 +3,44 @@ div.transbody {
   flex-direction: column;
   justify-content: center;
   padding: 10px;
+  margin-bottom: 80px;
+}
+
+div.controlbar {
+  position: fixed;
+  z-index: 100;
+  bottom: 0;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  height: 85px;
+  width: 100%;
+  background-color: none;
+}
+
+.controlbarLeft,
+.controlbarRight {
+  display: flex;
+  z-index: 101;
+  padding: 10px;
+  background-color: inherit;
+  align-items: flex-end;
+}
+
+.textsamplettl {
+  display: block;
+  z-index: 102;
+  margin: 0;
+  padding: 0 20px;
+  padding-bottom: 5px;
+  height: 40px;
+  font-size: 40px;
+  color: crimson;
+  pointer-events: none;
+  text-shadow: 2px 2px 2px #AAA;
+  align-self: flex-end;
 }
 
 div.body_tr {
@@ -33,9 +71,6 @@ div.body_subttl {
 }
 
 .output {
-  display: flex;
-  flex-flow: row wrap;
-  align-items: baseline;
   display: block;
   width: auto;
   height: auto;
@@ -48,7 +83,7 @@ div.body_subttl {
 }
 
 .inputfield {
-  width: 60%;
+  width: 90%;
   font-size: 20px;
 }
 
@@ -62,13 +97,18 @@ div.body_subttl {
   align-items: center;
 }
 
-.textsamplettl {
-  display: inline-block;
+.sampleJP {
+  display: block;
+  width: auto;
+  height: auto;
   margin: 0;
-  padding: 0;
-  font-size: 18px;
-  color: #aaa;
-  pointer-events: none;
+  padding: 5px;
+  overflow: hidden;
+
+  border: 1px solid #AAA;
+  text-align: left;
+  font-size: 12px;
+  color: #777;
 }
 
 .pycheck {
@@ -78,20 +118,25 @@ div.body_subttl {
 /* const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato', '#555']; */
 .color1 {
   color: #666;
+  text-shadow: 2px 2px 2px #AAA;
 }
 
 .color2 {
   color: DodgerBlue;
+  text-shadow: 2px 2px 2px #AAA;
 }
 
 .color3 {
   color: SeaGreen;
+  text-shadow: 2px 2px 2px #AAA;
 }
 
 .color4 {
   color: Tomato;
+  text-shadow: 2px 2px 2px #AAA;
 }
 
 .pron {
   font-size: 1rem;
+  text-shadow: 2px 2px 2px #AAA;
 }
