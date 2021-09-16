@@ -23,7 +23,7 @@ const idbJibo = new IndexedDBClass({
 });
 
 const idbMain = new IndexedDBClass({
-  db: { name: "dict_2_main", version: 1 },
+  db: { name: "dict_2_main", version: 5 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
   file: "./data/dict_2_main.json"
 });
@@ -115,7 +115,7 @@ function XxxData() {
 
   // [■HANDLER] サンプル文章取得
   const handleSample = (dir) => {
-    console.log('handleSample Called')
+    //console.log('handleSample Called')
     const sampleSize = sample.length;    //sampleText
     let newidx = null;
     switch (dir) {
@@ -177,6 +177,7 @@ function XxxData() {
               if (e.key === 'Enter') { handleChange() }
             }}
             placeholder="中国語入力後、実行ボタンを押す..."
+          //defaultValue="一般一半一个人一生不是不买不卖不一样"
           />
           {/* <Button color="secondary" variant="contained"
             className={style.clearbutton}

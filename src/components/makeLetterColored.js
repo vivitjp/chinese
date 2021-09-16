@@ -1,4 +1,5 @@
 import { z2h_zh, z2h_en } from '../lib/z2h_zh'
+import { shengdiaoNum } from '../lib/shengdiao.js'
 
 // ===========================================================
 // ローカル関数
@@ -131,10 +132,35 @@ const makeLetterColored = async ({
 
     if (found && found["S"][0]) {   //'S':発音配列
       buffer[i].entry = { 'W': buffer[i].word, 'S': found["S"] };  //[0]取得->辞書形式統一
-      buffer[i].isFound = true;
+      //buffer[i].isFound = true;   //字母変換は「不」と「一」の発音変換の対象
     }
   }
-  console.log(buffer);
+
+  //0. 「不」と「一」の発音変化に対応
+  for (let i = 0; i < buffer.length - 1; i++) {
+
+    //「不」と「一」が熟語の一部なら変換せず
+    if (buffer[i].isFound || buffer[i].word.includes(['，', '。'])) continue;
+
+    const moji = buffer[i].word;
+    if (moji !== '不' && moji !== '一') continue
+
+    // console.log(JSON.parse(JSON.stringify(buffer[i + 1])));
+
+    if (buffer[i + 1]['entry']['S'].length === 0) continue;
+    const pinyin = buffer[i + 1]['entry']['S'][0]
+    const num = shengdiaoNum(pinyin)
+    //console.log(moji, buffer[i + 1].word, pinyin, num);
+
+    if (moji === '不') {
+      buffer[i].entry['S'] = (num === 4) ? ['bú'] : ['bù'];
+    } else { //「一」
+      buffer[i].entry['S'] = (num === 4) ? ['yí'] : ['yi'];
+    }
+    buffer[i].isFound = true;
+  }
+
+  //console.log(buffer);
   return buffer;
 }
 
@@ -148,3 +174,13 @@ export default makeLetterColored
 // ​​isDeletable: false
 // ​​isFound: true
 // ​​word: "当然"
+
+// “不bù” の本来の声調は第４声ですが、後に続く音が第４声のときには、“不bú” と第２声に声調変化
+
+//「一」第一声  iīíǐì
+// ・順序を表す場合
+// ・単体で用いる場合
+// ・単語の末尾に来る場合
+// ・“十”の前に来る場合
+// +1, +2, +3 -> 第４声
+// +4         -> 第２声

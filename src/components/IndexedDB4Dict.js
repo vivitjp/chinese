@@ -9,21 +9,14 @@ const IndexedDB4Dict = async ({ idbClass }) => {
     //console.log('IndexedDB4Dict getStatus: ', res)
 
     switch (res) {
-      case idbSTATUS.OK: //(1)辞書存在 console.log('字母辞書存在')
-        console.log(idbClass.file, 'Already Set');
+      case idbSTATUS.OK: //(1)辞書存在 console.log('辞書存在')
+        console.log(idbClass.dbObj.name, 'Already Set');
         return true
       case idbSTATUS.NEW: //(2)新規作成
-        const res = await getJson(idbClass.file)
-        if (!res) throw Error('File OPEN Failed')
-        // const startTime = Date.now(); // 開始時間
-        // console.log('addAll Start', startTime)
-
-        console.log('idbClass.file: SIZE: ', Object.keys(res).length)
-        const resAdd = await idbClass.addAll(res);   //全登録
-
-        // console.log('addAll Result', resAdd)
-        // const endTime = Date.now();   // 終了時間
-        // console.log(idbClass.file, 'rebuilt Done', (endTime - startTime) / 1000);
+        const res2 = await getJson(idbClass.file)
+        if (!res2) throw Error('File OPEN Failed')
+        //console.log('idbClass.file: SIZE: ', Object.keys(res2).length)
+        await idbClass.addAll(res2);   //全登録
         return true
       default:
         throw Error('Status Error')

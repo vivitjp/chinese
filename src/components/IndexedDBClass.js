@@ -23,8 +23,7 @@ class IndexedDBClass { // extends Promise
     this.dbObj = { ...db };
     this.storeObj = { ...store };
     this.status = idbSTATUS.ERR;
-
-    this.file = file;
+    this.file = file;  //Source File to load in local dir
   }
 
   //===========================================
@@ -36,41 +35,43 @@ class IndexedDBClass { // extends Promise
       try {
         const request = window.indexedDB.open(this.dbObj.name, this.dbObj.version);
 
-        //■ 既存の DB name が同じ
+        //■ 既存の DB name/version が同じ
         request.onsuccess = (event) => {     //event.target.result;
           //= IDBDatabase { name: "china4", version: 2, objectStoreNames: DOMStringList(1), onabort: null, onclose: null, onerror: null, onversionchange: null }
-          console.log('IndexedDBClass', 'connectIDB', 'onsuccess')
+          //console.log('IndexedDBClass', 'connectIDB', 'onsuccess')
           this.status = idbSTATUS.OK;
-          //console.log('getStatus', 'request.onsuccess', this.dbObj.name)
+          console.log('getStatus', 'request.onsuccess', this.dbObj.name)
           resolve(idbSTATUS.OK);
           const dbReqRes = request.result
           dbReqRes.close();
         }
 
-        //■ 既存の DB name と異なる(バージョンの違いではトリガーされない？)
+        //■ 既存の DB name or version 異なる
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
-          console.log('IndexedDBClass', 'onupgradeneeded(before): ', this.storeObj.name);
+          console.log('IndexedDBClass', 'onupgradeneeded(before): ', this.dbObj.name);
 
-          //console.log('objectStoreNames', JSON.stringify(db.objectStoreNames))
-          if (!Array.from(db.objectStoreNames).includes(this.storeObj.name)) {
-            const objectStore = db.createObjectStore(this.storeObj.name, this.storeObj.storeOptions);
-            //index のコピー
-            if (this.storeObj.indexes) {
-              for (const idx of this.storeObj.indexes) {
-                objectStore.createIndex(idx.idxName, idx.idxName, { unique: idx.unique });
-              }
-            }
-            this.status = idbSTATUS.OK
-            console.log('getStatus', 'request.onupgradeneeded(1)', this.status)
-            resolve(idbSTATUS.NEW);
-          } else {
-            this.status = idbSTATUS.OK
-            console.log('getStatus', 'request.onupgradeneeded(2)', this.status)
-            resolve(idbSTATUS.OK);  //ここの処理不明
+          //名前が同じ -> バージョン更新: 以前の DB 削除
+          if (Array.from(db.objectStoreNames).includes(this.storeObj.name)) {
+            db.deleteObjectStore(this.storeObj.name);
+            console.log('getStatus', '旧DB削除')
           }
-          // const dbReqRes = request.result  エラー発生
-          // dbReqRes.close();
+
+          //新規作成
+          const objectStore = db.createObjectStore(this.storeObj.name, this.storeObj.storeOptions);
+
+          //Set index
+          if (this.storeObj.indexes) {
+            for (const idx of this.storeObj.indexes) {
+              objectStore.createIndex(idx.idxName, idx.idxName, { unique: idx.unique });
+            }
+          }
+
+          this.status = idbSTATUS.OK
+          console.log('getStatus', '新DB作成')
+          resolve(idbSTATUS.NEW);
+
+          // この後に request.onsuccess が再度呼ばれるが、resolve は再度返らない。
         }
 
         //■ エラー
@@ -99,14 +100,10 @@ class IndexedDBClass { // extends Promise
           const objStore = transaction.objectStore(this.storeObj.name);
 
           //objStore.addAll(data); //Chrome OK, Firefox NG(後日変更)
-          // console.log(data.length)
-          // console.log(data)
 
           for (const n of [...data]) { //add では Error が表示されない
             let putRes = objStore.put(n);           //PUT!!! ここに micro treansaction 入れると fail
-            putRes.onerror = (event) => {
-              console.log('PUT Error', JSON)
-            }
+            putRes.onerror = (event) => console.log('PUT Error')
           }
           db.close();
           resolve(idbSTATUS.OK);
@@ -148,9 +145,37 @@ class IndexedDBClass { // extends Promise
         }
       } catch (err) {
         console.log('IndexedDBClass: ', 'add():', err.message);
-        resolve(idbSTATUS.err)
+        resolve(idbSTATUS.ERR)
       }
     });
+  }
+
+
+  //==============================
+  // 更新1行(戻り値: boolean)
+  //==============================
+  update(key, data) {
+    // if (!data) throw Error('no data')
+    // if (this.status === idbSTATUS.ERR) throw Error('status error')
+    // return new Promise((resolve, reject) => {
+    //   try {
+    //     const request = window.indexedDB.open(this.dbObj.name, this.dbObj.version);
+    //     request.onsuccess = (event) => {
+    //       const db = event.target.result;
+    //       //if (!this.db || !data) throw Error('DB or data empty')
+    //       const transaction = db.transaction(this.storeObj.name, "readwrite");
+    //       const objStore = transaction.objectStore(this.storeObj.name);
+    //       //console.log(objectStore)
+    //       //IDBObjectStore { name: "jibo", keyPath: "", indexNames: DOMStringList(1), transaction: IDBTransaction, autoIncrement: false }
+
+    //       const storeReq = objStore.put(data);
+    //       storeReq.onsuccess = (event) => resolve(event.target.result);
+    //     }
+    //   } catch (err) {
+    //     console.log('IndexedDBClass: ', 'add():', err.message);
+    //     resolve(idbSTATUS.err)
+    //   }
+    // });
   }
 
   //==============================
@@ -206,8 +231,35 @@ class IndexedDBClass { // extends Promise
         }
       } catch (err) {
         console.error('IndexedDBClass: ', 'getAll():', err.message);
-        resolve(idbSTATUS.err)
+        resolve(idbSTATUS.ERR)
       }
+    });
+  }
+
+  //==============================
+  // 削除(ALL)
+  //==============================
+  deleteAll() {
+    if (this.status === idbSTATUS.ERR) throw Error('status error')
+
+    return new Promise((resolve, reject) => {
+      //     try {
+      //       const request = window.indexedDB.open(this.dbObj.name, this.dbObj.version);
+      //       request.onsuccess = (event) => {
+      //         const db = event.target.result;
+
+      //       }
+      //     } catch (err) {
+      //       console.log('IndexedDBClass: ', 'XXX():', err.message);
+      //       resolve(idbSTATUS.err)
+      //     }
+      // if (!this.db || !key) { console.log('delete Error', !!this.db, !!key); return null; }
+      // const transaction = this.db.transaction(this.storeObj.name, "readwrite");
+      // const objStore = transaction.objectStore(this.storeObj.name);
+      // const storeReq = objStore.delete(key);
+      // storeReq.onsuccess = event => {
+      //   resolve(event.type); //event.type="success"
+      // };
     });
   }
 
