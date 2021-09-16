@@ -13,12 +13,14 @@ import { useForm } from 'react-hook-form'
 import { FormControlLabel, Button, Checkbox, TextField } from '@material-ui/core';
 import ArrowBackIosIcon from '@material-ui/icons/ArrowBackIos';
 import ArrowForwardIosIcon from '@material-ui/icons/ArrowForwardIos';
+import CircularProgress from '@material-ui/core/CircularProgress'
 
 const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato'];
 
 const idbJibo = new IndexedDBClass({
   db: { name: "dict_1_jibo", version: 1 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
+  //indexes: [{idxName: "JB", unique: false },]
   file: "./data/dict_1_jibo.json"
 });
 
@@ -52,44 +54,45 @@ function XxxData() {
   const { register, handleSubmit, setValue, getValues } = useForm();
 
   const [sounds, setSounds] = useState([]);
+
   const [sample, setSample] = useState(null);
   const [sampleidx, setSampleidx] = useState(-1);
   const [sampleJP, setSampleJP] = useState(null);
+  const [sampleReady, setSampleReady] = useState(false);
 
   const [withNote, setWithNote] = useState(false);
   const [withPY, setWithPY] = useState(true);
   const [withColor, setWithColor] = useState(true);
 
+  const [allDicReady, setAllDicReady] = useState(false);
+
   // const [isAllDictReady, setIsAllDictReady] = useState(false);
   // const [msgText, setMsgText] = useState('');
 
   useEffect(
-    () => { (async () => { await IndexedDB4Dict({ idbClass: idbJibo }) })() }, []
-  );
-  useEffect(
-    () => { (async () => { await IndexedDB4Dict({ idbClass: idbMain }) })() }, []
-  );
-  useEffect(
-    () => { (async () => { await IndexedDB4Dict({ idbClass: idbPron }) })() }, []
-  );
-  useEffect(
-    () => { (async () => { await IndexedDB4Dict({ idbClass: idbExtra }) })() }, []
-  );
-  useEffect(
     () => {
       (async () => {
+        await Promise.all([
+          IndexedDB4Dict({ idbClass: idbJibo }),
+          IndexedDB4Dict({ idbClass: idbMain }),
+          IndexedDB4Dict({ idbClass: idbPron }),
+          IndexedDB4Dict({ idbClass: idbExtra }),
+        ]);
         const res = await getJson(idbSample.file);
-        if (res) setSample(res);
+        if (res) { setSample(res); }
+
+        //以下はデバグ用タイマー
+        setTimeout(() => { setAllDicReady(true); setSampleReady(true); }, 5000);
       })()
     }, []
-  );
+  )
+
   // useEffect(
   //   () => {
-  //     if (sample) {
-  //       setValue('txtChinese', sample[0]["C"])
-  //       setSampleJP(sample[0]["J"])
-  //       handleChange()
-  //     }
+  //     (async () => {
+  //       const res = await getJson(idbSample.file);
+  //       if (res) setSample(res);
+  //     })()
   //   }, []
   // );
 
@@ -106,16 +109,10 @@ function XxxData() {
     })();
   }
 
-  // [■HANDLER]  クリア
-  // const handleClear = () => {
-  //   setSounds(null)
-  //   setSampleidx(0)
-  //   setValue('txtChinese', '')
-  // }
-
   // [■HANDLER] サンプル文章取得
   const handleSample = (dir) => {
-    //console.log('handleSample Called')
+    console.log('handleSample Called allDicReady:', allDicReady)
+
     const sampleSize = sample.length;    //sampleText
     let newidx = null;
     switch (dir) {
@@ -151,17 +148,20 @@ function XxxData() {
     <>
       <div className={style.controlbar}>
         <div className={style.controlbarLeft}>
-          <ArrowBackIosIcon color="secondary" variant="Outlined" style={stylePrevBtn}
-            onClick={() => { handleSample('prev') }}
+          <ArrowBackIosIcon variant="Outlined" style={stylePrevBtn}
+            color={sampleReady ? "secondary" : "disabled"}
+            onClick={() => { if (sampleReady) handleSample('prev') }}
           />
-          <ArrowForwardIosIcon color="secondary" variant="Outlined" style={styleNextBtn}
-            onClick={() => { handleSample('next') }}
+          <ArrowForwardIosIcon variant="Outlined" style={styleNextBtn}
+            color={sampleReady ? "secondary" : "disabled"}
+            onClick={() => { if (sampleReady) handleSample('next') }}
           />
         </div>
         <div className={style.controlbarRight}>
-          <div className={style.textsamplettl}>小紅帽</div>
+          {sampleReady && <div className={style.textsamplettl}>小紅帽</div>}
         </div>
       </div>
+
       <div className={style.transbody}>
         <div className={style.body_ttl}>
           <ruby className={style.color1}>声<rt className={style.pron}>Shēng</rt></ruby>
@@ -179,11 +179,6 @@ function XxxData() {
             placeholder="中国語入力後、実行ボタンを押す..."
           //defaultValue="一般一半一个人一生不是不买不卖不一样"
           />
-          {/* <Button color="secondary" variant="contained"
-            className={style.clearbutton}
-            onClick={handleSubmit(handleClear)}
-            style={{ 'marginLeft': '20px' }}
-          >消</Button> */}
         </div>
 
         <div className={style.body_tr}>
@@ -203,8 +198,17 @@ function XxxData() {
             className={style.inputbutton}
             onClick={handleSubmit(handleChange)}
             style={{ 'marginRight': '20px' }}
+            disabled={!allDicReady}
           >実行</Button>
         </div>
+
+        {
+          !allDicReady && (
+            <div className={style.body_tr}>
+              <CircularProgress color="secondary" />
+            </div>
+          )
+        }
 
         <div className={style.body_tr}>
           {
