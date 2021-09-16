@@ -23,7 +23,7 @@ const idbJibo = new IndexedDBClass({
 });
 
 const idbMain = new IndexedDBClass({
-  db: { name: "dict_2_main", version: 5 },
+  db: { name: "dict_2_main", version: 1 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
   file: "./data/dict_2_main.json"
 });
