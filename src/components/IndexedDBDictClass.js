@@ -33,7 +33,7 @@ class IndexedDBDictClass { // extends Promise
           return true
         case idbSTATUS.NEW: //(2)新規作成
           const data = await getJson(this.file)
-          if (!data) throw Error('DATA が空です。')
+          if (!data) throw Error('DATA が空')
           if (!Array.isArray(data)) throw Error('DATA 形式不正: 配列のみ')
 
           //console.log('idbClass.file: SIZE: ', data.length)
