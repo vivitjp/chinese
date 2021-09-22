@@ -1,9 +1,81 @@
-div.transbody {
+div.mainbody {
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 10px;
   margin-bottom: 80px;
+  box-sizing: border-box;
+}
+
+div.menubutton {
+  position: fixed;
+  z-index: 100;
+  top: 30px;
+  left: 10px;
+
+  display: inline-block;
+
+  height: auto;
+  width: auto;
+  box-sizing: border-box;
+
+  background: none;
+}
+
+div.leftmenu {
+  position: fixed;
+  z-index: 200;
+  left: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  height: 100%;
+  width: 200px;
+  overflow: hidden;
+
+  margin: 0;
+  padding: 5px;
+  box-sizing: border-box;
+
+  background-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 3px 3px 3px 3px rgba(0, 0, 0, 0.2);
+}
+
+div.menu_bglayer {
+  position: fixed;
+  z-index: 199;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+div.leftmenu_title {
+  height: auto;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  color: #f50057;
+  font-size: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-align: center;
+}
+
+div.leftmenu_item {
+  height: auto;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  color: #777;
+
+  background-color: #FFF;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 5px;
+  box-shadow: 0px 0px 3px 3px rgba(0, 0, 0, 0.2);
 }
 
 div.controlbar {
@@ -15,7 +87,7 @@ div.controlbar {
   flex-direction: row;
   justify-content: space-between;
 
-  height: 85px;
+  height: auto;
   width: 100%;
   background-color: none;
 }
@@ -29,18 +101,38 @@ div.controlbar {
   align-items: flex-end;
 }
 
-.textsamplettl {
+.controlbarSample {
+  z-index: 101;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 6px;
+  background-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0px 0px 3px 3px rgba(0, 0, 0, 0.2);
+  border-top-left-radius: 14px;
+}
+
+.textsamplenote {
   display: block;
-  z-index: 102;
   margin: 0;
   padding: 0 20px;
-  padding-bottom: 5px;
-  height: 40px;
-  font-size: 40px;
+  font-size: 0.8rem;
+  color: #777;
+  pointer-events: none;
+}
+
+.textsamplettl {
+  display: block;
+
+  margin: 0;
+  padding: 0 20px;
+
+  font-size: 1.6rem;
   color: crimson;
   pointer-events: none;
-  text-shadow: 2px 2px 2px #AAA;
-  align-self: flex-end;
+  text-shadow: 0px 0px 2px #AAA;
 }
 
 div.body_tr {
@@ -48,6 +140,26 @@ div.body_tr {
   margin: 0;
   margin-top: 10px;
   padding: 10px;
+  overflow: hidden;
+}
+
+div.body_tr_flex {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  width: auto;
+  margin: 0;
+  margin-top: 10px;
+  align-items: center;
+  padding: 10px;
+  overflow: hidden;
+}
+
+div.body_tr_group {
+  display: inline;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -59,6 +171,7 @@ div.body_ttl {
   padding: 5px;
   overflow: hidden;
   font-size: 3rem;
+  cursor: default;
 }
 
 div.body_subttl {
@@ -91,24 +204,41 @@ div.body_subttl {
   margin-right: 20px;
 }
 
-.controlRow {
+/* .controlRow {
   display: flex;
   justify-content: center;
   align-items: center;
-}
+} */
 
 .sampleJP {
   display: block;
-  width: auto;
+  width: 100%;
   height: auto;
   margin: 0;
-  padding: 5px;
+  padding: 3px;
   overflow: hidden;
 
   border: 1px solid #AAA;
   text-align: left;
-  font-size: 12px;
+  font-size: 0.8rem;
   color: #777;
+}
+
+.note_small {
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  padding-right: 10px;
+  overflow: hidden;
+
+  text-align: right;
+  font-size: 10px;
+  color: #777;
+  cursor: default;
+  pointer-events: none;
+  user-select: none;
 }
 
 .pycheck {

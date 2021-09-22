@@ -15,12 +15,12 @@
 //   }
 // });
 
-try {
+// try {
 
-} catch (e) {
-  console.error('', e.message)
-  //return ????
-}
+// } catch (e) {
+//   console.error('', e.message)
+//   //return ????
+// }
 
 export const idbSTATUS = { OK: 1, NEW: 2, ERR: 0 }
 

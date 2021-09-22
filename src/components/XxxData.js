@@ -5,7 +5,7 @@ import { KanjiHTML } from './KanjiHTML';
 import PinYinColorExplain from './PinYinColorExplain'
 
 import IndexedDBClass from './IndexedDBClass'
-import IndexedDB4Dict from './IndexedDB4Dict'
+import IndexedDBDictClass from './IndexedDBDictClass'
 
 import style from './XxxData.module.css'
 
@@ -14,48 +14,66 @@ import { FormControlLabel, Button, Checkbox, TextField } from '@material-ui/core
 import ArrowBackIosIcon from '@material-ui/icons/ArrowBackIos';
 import ArrowForwardIosIcon from '@material-ui/icons/ArrowForwardIos';
 import CircularProgress from '@material-ui/core/CircularProgress'
+import ListOutlinedIcon from '@material-ui/icons/ListOutlined';
 
 const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato'];
 
-const idbJibo = new IndexedDBClass({
+//■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
+//  DICTIONARY
+//■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
+const idbJibo = new IndexedDBDictClass({
   db: { name: "dict_1_jibo", version: 1 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
-  //indexes: [{idxName: "JB", unique: false },]
+  //indeces: [{idxName: "JB", unique: false },]
   file: "./data/dict_1_jibo.json"
 });
 
-const idbMain = new IndexedDBClass({
+const idbMain = new IndexedDBDictClass({
   db: { name: "dict_2_main", version: 1 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
   file: "./data/dict_2_main.json"
 });
 
-const idbPron = new IndexedDBClass({
+const idbPron = new IndexedDBDictClass({
   db: { name: "dict_3_pron", version: 1 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
   file: "./data/dict_3_pron.json"
 });
 
-const idbExtra = new IndexedDBClass({
+const idbExtra = new IndexedDBDictClass({
   db: { name: "dict_4_extra", version: 1 },
   store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
   file: "./data/dict_4_extra.json"
 });
 
-const idbSample = new IndexedDBClass({
-  db: { name: "dict_5_sample", version: 1 },
-  store: { name: "sampl", storeOptions: { keyPath: "idx", autoIncrement: true }, },
-  file: "./data/sentence_akazukin.json"
-});
-//[{"C": "从前有个可爱的小姑娘，", "J": "昔、かわいい小さな女の子がいました。"},
+const sample_base_path = "./data/"
+const sample_map = new Map([
+  ['hong', { TTL: '紅小帽', FILE: 'sentence_akazukin.json' }],
+  ['holday', { TTL: '休暇', FILE: 'sentence_holiday.json' }],
+]);
+
+// const idbLogin = new IndexedDBClass({
+//   db: { name: "login", version: 1 },
+//   store: { name: "user", storeOptions: { keyPath: "KEY", autoIncrement: false }, },
+// });
 
 
+//■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
+//  Main Function
+//■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
 function XxxData() {
+  //==========================================
+  // ■ 変数
+  //==========================================
   const { register, handleSubmit, setValue, getValues } = useForm();
+
+  //Menu
+  const [isMenuOpened, setMenuOpened] = useState(false);
 
   const [sounds, setSounds] = useState([]);
 
   const [sample, setSample] = useState(null);
+  const [sampleTTL, setSampleTTL] = useState(null);
   const [sampleidx, setSampleidx] = useState(-1);
   const [sampleJP, setSampleJP] = useState(null);
   const [sampleReady, setSampleReady] = useState(false);
@@ -66,35 +84,28 @@ function XxxData() {
 
   const [allDicReady, setAllDicReady] = useState(false);
 
-  // const [isAllDictReady, setIsAllDictReady] = useState(false);
-  // const [msgText, setMsgText] = useState('');
-
+  //==========================================
+  // ■ useEffect
+  //==========================================
   useEffect(
     () => {
       (async () => {
         await Promise.all([
-          IndexedDB4Dict({ idbClass: idbJibo }),
-          IndexedDB4Dict({ idbClass: idbMain }),
-          IndexedDB4Dict({ idbClass: idbPron }),
-          IndexedDB4Dict({ idbClass: idbExtra }),
+          idbJibo.setDict(),
+          idbMain.setDict(),
+          idbPron.setDict(),
+          idbExtra.setDict(),
         ]);
-        const res = await getJson(idbSample.file);
-        if (res) { setSample(res); }
 
         //以下はデバグ用タイマー
-        setTimeout(() => { setAllDicReady(true); setSampleReady(true); }, 5000);
+        setTimeout(() => { setAllDicReady(true); }, 2000);
       })()
     }, []
   )
 
-  // useEffect(
-  //   () => {
-  //     (async () => {
-  //       const res = await getJson(idbSample.file);
-  //       if (res) setSample(res);
-  //     })()
-  //   }, []
-  // );
+  //==========================================
+  // ■ Handlers
+  //==========================================
 
   // [■HANDLER] 変換
   const handleChange = () => {  //console.log('handleChange'); 
@@ -111,7 +122,7 @@ function XxxData() {
 
   // [■HANDLER] サンプル文章取得
   const handleSample = (dir) => {
-    console.log('handleSample Called allDicReady:', allDicReady)
+    console.log('handleSample:', allDicReady)
 
     const sampleSize = sample.length;    //sampleText
     let newidx = null;
@@ -128,8 +139,34 @@ function XxxData() {
     handleChange()
   }
 
+  // [■HANDLER] Open Menu
+  const handleOpenMenuItem = (key) => {
+    try {
+      //const item = sample_files[key]
+      const item = sample_map.get(key)
+      if (!item || !item.FILE) throw Error('No Entry');
+
+      setSampleTTL(item.TTL);
+
+      (async () => {
+        const res = await getJson(sample_base_path + item.FILE);
+        if (res) {
+          setSample(res);
+          setSampleReady(true);
+        }
+        setMenuOpened(false)
+      })()
+    } catch (e) {
+
+    }
+  }
+
+  //==========================================
+  // ■ Material-ui SVG Icons CSS
+  //==========================================
+
   const stylePrevBtn = {
-    backgroundColor: "rgba(100,100,100,0.2)",
+    backgroundColor: "rgba(150,150,150,0.2)",
     borderRadius: "25px",
     padding: "5px",
     cursor: "pointer",
@@ -137,32 +174,73 @@ function XxxData() {
   }
 
   const styleNextBtn = {
-    backgroundColor: "rgba(100,100,100,0.2)",
+    backgroundColor: "rgba(150,150,150,0.2)",
     borderRadius: "40px",
     padding: "5px",
     cursor: "pointer",
     fontSize: "60px",
   }
 
+  const styleMenuBtn = {
+    position: "relative",
+    backgroundColor: "rgba(200,200,200,0.2)",
+    color: "#f50057",
+    borderRadius: "10px",
+    padding: "10px",
+    cursor: "pointer",
+    fontSize: "60px",
+    zIndex: "101"
+  }
+
+  //==========================================
+  // ■ Main Return
+  //==========================================
   return (
     <>
-      <div className={style.controlbar}>
-        <div className={style.controlbarLeft}>
-          <ArrowBackIosIcon variant="Outlined" style={stylePrevBtn}
-            color={sampleReady ? "secondary" : "disabled"}
-            onClick={() => { if (sampleReady) handleSample('prev') }}
-          />
-          <ArrowForwardIosIcon variant="Outlined" style={styleNextBtn}
-            color={sampleReady ? "secondary" : "disabled"}
-            onClick={() => { if (sampleReady) handleSample('next') }}
-          />
-        </div>
-        <div className={style.controlbarRight}>
-          {sampleReady && <div className={style.textsamplettl}>小紅帽</div>}
-        </div>
+      { /* ========== LEFT MENU ========== */}
+      <div className={style.menubutton}>
+        <ListOutlinedIcon variant="Outlined" style={styleMenuBtn}
+          onClick={() => { setMenuOpened(true) }}
+        />
       </div>
 
-      <div className={style.transbody}>
+      {isMenuOpened &&
+        <>
+          <div className={style.leftmenu}>
+            <div className={style.leftmenu_title}>Menu</div>
+            {[...sample_map.keys()].map(key => {
+              const cell = sample_map.get(key);
+              return <div key={key} className={style.leftmenu_item}
+                onClick={() => { handleOpenMenuItem(key) }}>{cell.TTL}</div>
+            })}
+          </div>
+          <div className={style.menu_bglayer}
+            onClick={() => { setMenuOpened(false) }}
+          ></div>
+        </>
+      }
+
+      { /* ========== Sample Controller ========== */}
+      {sampleReady &&
+        <div className={style.controlbar}>
+          <div className={style.controlbarLeft}>
+            <ArrowBackIosIcon variant="Outlined" style={stylePrevBtn}
+              color={"secondary"} onClick={() => { handleSample('prev') }}
+            />
+            <ArrowForwardIosIcon variant="Outlined" style={styleNextBtn}
+              color={"secondary"} onClick={() => { handleSample('next') }}
+            />
+          </div>
+          <div className={style.controlbarSample}>
+            <div className={style.textsamplenote}>セットサンプル</div>
+            <div className={style.textsamplettl}>{sampleTTL}</div>
+          </div>
+        </div>
+      }
+
+      { /* ========== BODY ========== */}
+      <div className={style.mainbody}>
+        { /* ---------- TITLE ---------- */}
         <div className={style.body_ttl}>
           <ruby className={style.color1}>声<rt className={style.pron}>Shēng</rt></ruby>
           <ruby className={style.color2}>即<rt className={style.pron}>Jí</rt></ruby>
@@ -170,6 +248,7 @@ function XxxData() {
           <ruby className={style.color4}>色<rt className={style.pron}>Sè</rt></ruby>
         </div>
 
+        { /* ---------- TEXT INPUT FIELD ---------- */}
         <div className={style.body_tr}>
           <TextField type="text" className={style.inputfield}
             {...register('txtChinese', { required: true })}
@@ -181,57 +260,64 @@ function XxxData() {
           />
         </div>
 
-        <div className={style.body_tr}>
-          <FormControlLabel label="色"
-            control={<Checkbox className={style.pycheck} checked={withColor}
-              onChange={() => setWithColor(!withColor)} />} />
+        { /* ---------- OPTION & BUTTON ---------- */}
+        <div className={style.body_tr_flex}>
+          <div className={style.body_tr_group}>
+            <FormControlLabel label="色"
+              control={<Checkbox className={style.pycheck} checked={withColor}
+                onChange={() => setWithColor(!withColor)} />} />
 
-          <FormControlLabel label="拼音"
-            control={<Checkbox className={style.pycheck} checked={withPY}
-              onChange={() => setWithPY(!withPY)} />} />
+            <FormControlLabel label="拼音"
+              control={<Checkbox className={style.pycheck} checked={withPY}
+                onChange={() => setWithPY(!withPY)} />} />
 
-          <FormControlLabel label="凡例"
-            control={<Checkbox className={style.pycheck} checked={withNote}
-              onChange={() => setWithNote(!withNote)} />} />
-
-          <Button color="secondary" variant="contained"
-            className={style.inputbutton}
-            onClick={handleSubmit(handleChange)}
-            style={{ 'marginRight': '20px' }}
-            disabled={!allDicReady}
-          >実行</Button>
+            <FormControlLabel label="凡例"
+              control={<Checkbox className={style.pycheck} checked={withNote}
+                onChange={() => setWithNote(!withNote)} />} />
+          </div>
+          <div className={style.body_tr_group}>
+            <Button color="secondary" variant="contained"
+              className={style.inputbutton}
+              onClick={handleSubmit(handleChange)}
+              disabled={!allDicReady}
+            >実行</Button>
+          </div>
         </div>
 
-        {
-          !allDicReady && (
-            <div className={style.body_tr}>
-              <CircularProgress color="secondary" />
-            </div>
-          )
+        { /* ---------- LOADING CYCLE ---------- */}
+        {!allDicReady &&
+          <div className={style.body_tr}>
+            <CircularProgress color="secondary" />
+          </div>
         }
 
-        <div className={style.body_tr}>
-          {
-            sounds && (
-              <div className={style.output}>
-                {/* {console.log('SOUNDS CALLED')} */}
-                {sounds.map(item =>
-                  <KanjiHTML key={item.idx}
-                    item={item}
-                    withPY={withPY}
-                    withColor={withColor}
-                    colors={colors}
-                  />
-                )}
-                {withNote && <PinYinColorExplain colors={colors} />}
-              </div>
-            )
-          }
+        { /* ---------- PINYIN TEXT ---------- */}
+        {
+          sounds &&
+          <div className={style.body_tr}>
+            <div className={style.output}>
+              {sounds.map(item =>
+                <KanjiHTML key={item.idx}
+                  item={item} withPY={withPY} withColor={withColor} colors={colors}
+                />
+              )}
+              {withNote && <PinYinColorExplain colors={colors} />}
+            </div>
+          </div>
+
+        }
+
+        { /* ---------- NOTE ---------- */}
+        <div className={style.body_tr} style={{ marginTop: "0", padding: "0" }}>
+          <div className={style.note_small}>※熟語(下部点線)以外の「一」の拼音は不正確</div>
         </div>
+
+        { /* ---------- SAMPLE JP(日本語訳) ---------- */}
         <div className={style.body_tr}>
-          {sampleJP && (<div className={style.sampleJP}>{sampleJP}</div>)}
+          {sampleJP && (
+            <div className={style.sampleJP}>{sampleJP}</div>
+          )}
         </div>
-        {/* <div className={style.body_tr} style={{ fontSize: '20px' }}>{testText}</div> */}
       </div>
     </>
   )

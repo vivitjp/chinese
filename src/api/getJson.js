@@ -8,6 +8,7 @@ export async function getJson(fileName) {
     if (!res.ok) throw Error(obj.message);
     //console.log(Object.keys(obj).length);
     return obj;
+
   } catch (error) {
     console.error(fileName, error.message);
     return null;
