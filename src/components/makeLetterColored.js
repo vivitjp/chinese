@@ -1,6 +1,12 @@
 import { z2h_zh, z2h_en } from '../lib/z2h_zh'
 import { shengdiaoNum } from '../lib/shengdiao.js'
-import { idbTYPE } from './IndexedDBClass'
+import { idbTYPE } from '../lib/IndexedDBClass'
+import { execDicts, dictNames } from './store/dictsAPI'
+
+// dicts.jibo,   //字母: [{"W": "一", "S": ["yī"]}, {"W": "乙", "S": ["yǐ"]}]
+// dicts.main,   //Main: 
+// dicts.pron,   //固有: [{"W": "安徽", "S": ["ān", "huī"]}]
+// dicts.extra,  //優先: [{"W": "行不行", "S": ["xíngbùxíng"]}]
 
 // ===========================================================
 // ローカル関数
@@ -16,7 +22,7 @@ const getWordsArray = (
 ) => {
   try {
     if (idx === undefined || !sentence) throw Error('idx or sentence 無し');
-    if (idx < 0 || idx >= sentence.length - 1) throw Error('idx or sentence 不正値');
+    if (idx < 0 || idx >= sentence.length) throw Error('idx 不正値');
 
     const rebreakingChars = "[。，\s0-9a-zA-Z.,()[\]{}<>《》（）]";  //熟語の切れ目とする記号
     const re = RegExp(rebreakingChars);
@@ -51,8 +57,6 @@ const searchDict = ({
   i          //Buffer の index
 }) => {
   try {
-    //console.log('keyword/found', keyword, found);
-
     buffer[i] = {          // Buffer の idx 番目の内容を置換え
       idx: i,              // react map用のindex
       word: keyword,       //
@@ -76,16 +80,9 @@ const searchDict = ({
 // 
 //
 // ===========================================================
-const makeLetterColored = async ({
-  sentence,  //文字列
-  idbJibo,   //字母: [{"W": "一", "S": ["yī"]}, {"W": "乙", "S": ["yǐ"]}]
-  idbMain,   //Main: 
-  idbPron,   //固有: [{"W": "安徽", "S": ["ān", "huī"]}]
-  idbExtra,  //優先: [{"W": "行不行", "S": ["xíngbùxíng"]}]
-}) => {
+const makeLetterColored = async ({ sentence }) => {   //文字列
   try {
     if (!sentence) throw Error('sentence')
-    if (!idbMain || !idbExtra || !idbJibo || !idbPron) throw Error('辞書')
 
     const altSentence = z2h_zh(z2h_en(sentence))
 
@@ -101,38 +98,30 @@ const makeLetterColored = async ({
     })
 
     // 辞書検索
-    for (let i = 0; i < sentence.length; i++) {
+    for (let i = 0; i < altSentence.length; i++) {
 
       // 辞書照会用の文字列配列取得して回す
-      for (const keyword of getWordsArray(sentence, i)) {
-        //console.log('辞書検索', keyword)
+      for (const keyword of getWordsArray(altSentence, i)) {
 
-        //4. 優先辞書(Extra)
-        const exFound = await idbExtra.exec({ type: idbTYPE.GetOne, key: keyword });
-        if (exFound) {
-          //console.log('発見(優先)', JSON.stringify(exFound))
-          searchDict({ buffer, found: exFound, keyword, i })
-          i += keyword.length - 1
-          break;
+        let found_flag = false;
+        //4.優先辞書(Extra), 3.固有名詞(Pronoun), 2.一般辞書
+        for (const dict of [dictNames.extra.name, dictNames.pron.name, dictNames.main.name]) {
+          //console.log(dict, keyword)
+          try {
+            const res = await execDicts({
+              dict: dict, param: { type: idbTYPE.GetOne, key: keyword }
+            });
+            if (res.result) {
+              searchDict({ buffer, found: res.result, keyword, i })
+              i += keyword.length - 1
+              found_flag = true;
+              break;
+            }
+          } catch (e) {
+            //console.error(debug_pref, e.result)
+          }
         }
-
-        //3. 固有名詞(Pronoun)
-        const proFound = await idbPron.exec({ type: idbTYPE.GetOne, key: keyword });
-        if (proFound) {
-          //console.log('発見(固有)', JSON.stringify(proFound))
-          searchDict({ buffer, found: proFound, keyword, i })
-          i += keyword.length - 1
-          break;
-        }
-
-        //2. 一般辞書
-        const mainFound = await idbMain.exec({ type: idbTYPE.GetOne, key: keyword });
-        if (mainFound) {
-          //console.log('発見(一般)', JSON.stringify(mainFound))
-          searchDict({ buffer, found: mainFound, keyword, i })
-          i += keyword.length - 1  //i カウント修正
-          break;
-        }
+        if (found_flag) break;
       }
     }
 
@@ -143,12 +132,16 @@ const makeLetterColored = async ({
     for (const i in buffer) {
       if (buffer[i].isFound || buffer[i].word.includes(['，', '。'])) continue;
 
-      const found = await idbJibo.exec({ type: idbTYPE.GetOne, key: buffer[i].word });
-      //console.log('found', buffer[i].word, found)
+      try {
+        const res = await execDicts({
+          dict: "jibo", param: { type: idbTYPE.GetOne, key: buffer[i].word }
+        });
 
-      if (found && found["S"][0]) {   //'S':発音配列
-        buffer[i].entry = { 'W': buffer[i].word, 'S': found["S"] };  //[0]取得->辞書形式統一
-        //buffer[i].isFound = true;   //字母変換は「不」と「一」の発音変換の対象
+        if (res.result && res.result["S"][0]) {
+          buffer[i].entry = { 'W': buffer[i].word, 'S': res.result["S"] };  //[0]取得->辞書形式統一
+        }
+      } catch (e) {
+        //console.error(debug_pref, e.result)
       }
     }
 
@@ -161,17 +154,14 @@ const makeLetterColored = async ({
       const moji = buffer[i].word;
       if (moji !== '不' && moji !== '一') continue
 
-      // console.log(JSON.parse(JSON.stringify(buffer[i + 1])));
-
       if (buffer[i + 1]['entry']['S'].length === 0) continue;
       const pinyin = buffer[i + 1]['entry']['S'][0]
       const num = shengdiaoNum(pinyin)
-      //console.log(moji, buffer[i + 1].word, pinyin, num);
 
       if (moji === '不') {
         buffer[i].entry['S'] = (num === 4) ? ['bú'] : ['bù'];
       } else { //「一」
-        buffer[i].entry['S'] = (num === 4) ? ['yí'] : ['yi'];
+        buffer[i].entry['S'] = ['yí']; //(num === 4) ? ['yí'] : ['yi'];
       }
       buffer[i].isFound = true;
     }

@@ -2,7 +2,10 @@
 // 戻値: 1
 export const getChineseAccentNum = (sound) => {
   try {
-    if (!sound) throw Error('sound')
+    if (!sound) return 0;
+    //   console.log('getChineseAccentNum', sound)
+    //   throw Error('sound')
+    // }
 
     if (sound.match(/[āīūēōǖ]/)) return 1
     else if (sound.match(/[áíúéóǘ]/)) return 2
@@ -10,7 +13,7 @@ export const getChineseAccentNum = (sound) => {
     else if (sound.match(/[àìùèòǜ]/)) return 4
     else return 0
   } catch (e) {
-    console.error('', e.message)
+    console.error('getChineseAccentNum', e.message)
     return 0
   }
 }
@@ -21,7 +24,7 @@ export const removeChineseAccentSign = (sound) => {
   try {
 
   } catch (e) {
-    console.error('', e.message)
+    console.error('removeChineseAccentSign', e.message)
     //return ????
   }
 

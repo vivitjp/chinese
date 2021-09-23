@@ -15,14 +15,13 @@
 //   }
 // });
 
-// try {
 
-// } catch (e) {
-//   console.error('', e.message)
-//   //return ????
-// }
-
-export const idbSTATUS = { OK: 1, NEW: 2, ERR: 0 }
+export const idbStatus = {
+  ERR: 0,
+  OK: 1,
+  NEW: 2,
+  NOREC2UPD: 3
+}
 
 export const idbTYPE = {
   Add: 'Add',
@@ -37,14 +36,14 @@ class IndexedDBClass { // extends Promise
   constructor({ db, store, file }) {
     this.dbObj = { ...db };
     this.storeObj = { ...store };
-    this.status = idbSTATUS.ERR;
+    this.status = idbStatus.ERR;
   }
 
   //===========================================
   //  DBの状態をチェックして Status を返す
   //  DBインデックス定義(onupgradeneeded)を行うのはここだけ
   //===========================================
-  initDB({ debug = false }) {
+  initDB({ debug = false } = {}) {
 
     const debug_pref = 'IndexedDBClass[' + this.dbObj.name + ']: initDB: '
     if (debug) console.log(debug_pref)
@@ -57,8 +56,9 @@ class IndexedDBClass { // extends Promise
         request.onsuccess = (event) => {     //event.target.result;
           if (debug) console.log(debug_pref, 'onsuccess')
 
-          this.status = idbSTATUS.OK; //DB Class 成功、Add/Upd/Delが使用可能
-          resolve(idbSTATUS.OK);
+          this.status = idbStatus.OK; //DB Class 成功、Add/Upd/Delが使用可能
+          //resolve(idbStatus.OK);
+          resolve({ status: idbStatus.OK, result: 0 });
 
           const db = request.result
           db.close();
@@ -86,10 +86,11 @@ class IndexedDBClass { // extends Promise
                 objectStore.createIndex(idx.idxName, idx.idxName, { unique: idx.unique || false });
             }
           }
-          this.status = idbSTATUS.OK; //DB Class 成功、Add/Upd/Delが使用可能
+          this.status = idbStatus.OK; //DB Class 成功、Add/Upd/Delが使用可能
           if (debug) console.log(debug_pref, '新DB作成')
 
-          resolve(idbSTATUS.NEW);
+          resolve({ status: idbStatus.NEW, result: 0 });
+          //resolve(idbStatus.NEW);
 
           // この後に request.onsuccess が再度呼ばれるが、resolve は再度返らない。
         }
@@ -99,12 +100,13 @@ class IndexedDBClass { // extends Promise
 
       } catch (e) {
         console.error(debug_pref, 'Error ', e.message);
-        resolve(idbSTATUS.ERR);
+        resolve({ status: idbStatus.ERR, result: 0 });
+        //resolve(idbStatus.ERR);
       }
     });
   }
 
-  checkParam({ type, data, key, debug = false, debug_pref }) {
+  checkParam({ type, data, key, debug = false, debug_pref = "" }) {
     try {
       switch (type) {
         case idbTYPE.Add:
@@ -120,6 +122,7 @@ class IndexedDBClass { // extends Promise
         case idbTYPE.GetOne:
           if (!key) throw Error('no key')
           break;
+        case idbTYPE.Clear:
         case idbTYPE.GetAll:
           break;
         default:
@@ -127,7 +130,7 @@ class IndexedDBClass { // extends Promise
       }
       return true
     } catch (e) {
-      console.error(debug_pref, "Error ", e.messge);
+      console.error(debug_pref, "checkParam Error ", e.message);
       return false;
     }
   }
@@ -142,7 +145,7 @@ class IndexedDBClass { // extends Promise
 
     return new Promise((resolve, reject) => {
       try {
-        if (this.status === idbSTATUS.ERR) throw Error('DB is not Ready')
+        if (this.status === idbStatus.ERR) throw Error('DB is not Ready')
         if (!this.checkParam({ type, data, key, debug, debug_pref })) throw Error('Check Failed')
         if (debug) console.log(debug_pref, 'Started')
 
@@ -157,44 +160,68 @@ class IndexedDBClass { // extends Promise
           const objStore = transaction.objectStore(this.storeObj.name);
 
           let numSucess = 0;
-          let numErrors = 0;
           let storeReq = null;
 
+          //======================
+          //  ■ [挿入(複数)]
+          //======================
           if (type === idbTYPE.Add && Array.isArray(data)) {
-            //■ 複数 DATA 挿入
             for (const n of [...data]) {       //add では Error が表示されない
               storeReq = objStore.put(n);    //PUT!!!
               numSucess++;
-              // throw Error せずに、ログのみ残して、put() 継続する
-              // eslint-disable-next-line no-loop-func
-              storeReq.onerror = () => { numErrors++; }
-              //storeReq.onsuccess = (e) => // e.target.result; 挿入Data ID
             }
-            resolve(idbSTATUS.OK);
-          } else {
-            switch (type) {
-              case idbTYPE.Add: storeReq = objStore.put(data); break; //■ 単数 DATA 挿入
-              case idbTYPE.Update: storeReq = objStore.put(data, key); break; //■ 単数 DATA 更新
-              case idbTYPE.Delete: storeReq = objStore.delete(key); break; //■ 単数 DATA 削除
-              case idbTYPE.Clear: storeReq = objStore.clear(); break;//■ DATA 全削除
-              case idbTYPE.GetOne: storeReq = objStore.get(key); break;//■ 単数 DATA 取得
-              case idbTYPE.GetAll: storeReq = objStore.getAll(key || null); break;//■ 全 DATA 取得
-              default:
+            resolve({ status: idbStatus.OK, result: numSucess });
+          } else
+            //======================
+            //  ■ [更新(単数)]
+            //======================
+            if (type === idbTYPE.Update) {
+              storeReq = objStore.get(key);  //Key 存在の確認
+              storeReq.onsuccess = (e) => {
+                if (debug) console.log(debug_pref, '単数 DATA 更新: ', e.target.result)
+                if (!e.target.result || e.target.result === 0) {
+                  reject({ status: idbStatus.NOREC2UPD, result: key });
+                } else {
+                  //console.log('Update', 'OK')
+                  let storeReqPut = objStore.put(data);
+                  storeReqPut.onsuccess = (e) => {
+                    resolve({ status: idbStatus.OK, result: e.target.result });
+                  }
+                  storeReqPut.onerror = (e) => {
+                    reject({ status: idbStatus.NOREC2UPD, result: key });
+                  }
+                }
+              }
+              storeReq.onerror = (e) => { throw Error(e.message); }
             }
-            storeReq.onsuccess = (e) => {
-              //console.log(debug_pref, e.target.result)
-              resolve(e.target.result || null);
+            //======================
+            // ■ [挿入(単数)], [削除(単数/全体)], [取得(単数/全体)]
+            //======================
+            else {
+              switch (type) {
+                case idbTYPE.Add:
+                  storeReq = objStore.put(data); break; //■ 単数 DATA 挿入
+                case idbTYPE.Delete:
+                  storeReq = objStore.delete(key); break; //■ 単数 DATA 削除
+                case idbTYPE.Clear:
+                  storeReq = objStore.clear(); break;//■ DATA 全削除
+                case idbTYPE.GetOne:
+                  storeReq = objStore.get(key); break;//■ 単数 DATA 取得
+                case idbTYPE.GetAll:
+                  storeReq = objStore.getAll(key || null); break;//■ 全体 DATA 取得
+                default:
+              }
+              storeReq.onsuccess = (e) => {
+                resolve({ status: idbStatus.OK, result: e.target.result || 0 });
+              }
+              storeReq.onerror = (e) => {
+                reject({ status: idbStatus.ERR, result: e.message });
+              }
             }
-            storeReq.onerror = (e) => { numErrors++; throw Error(e.message); }
-          }
-
-          if (debug) console.log(debug_pref, 'Executed Record:' + numSucess)
-          if (debug && numErrors) console.log(debug_pref, type, 'Failed Record:' + numErrors)
-          if (debug) console.log(debug_pref, 'DB closed')
 
           //■ Transaction: 成功
           transaction.oncomplete = () => {
-            if (debug) console.log(debug_pref, 'Transaction complete')
+            //if (debug) console.log(debug_pref, 'Transaction complete')
             const db = request.result
             db.close();
           }
@@ -203,7 +230,7 @@ class IndexedDBClass { // extends Promise
           transaction.onerror = (e) => {
             const db = request.result
             db.close();
-            throw Error(e.messge);
+            throw Error(e.message);
           }
         }
 
@@ -211,8 +238,8 @@ class IndexedDBClass { // extends Promise
         request.onerror = (e) => { throw Error(e.message) }
 
       } catch (e) {
-        console.error(debug_pref, "Error ", e.messge);
-        reject(idbSTATUS.ERR)
+        console.log(debug_pref, "Error ", e.message);
+        reject({ status: idbStatus.ERR, result: e.message });
       }
     });
   }

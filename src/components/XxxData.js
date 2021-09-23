@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectDicts, fetchDicts } from './store/dictsSlice'
+
 import { getJson } from '../api/getJson';
+
 import makeLetterColored from './makeLetterColored'
 import { KanjiHTML } from './KanjiHTML';
 import PinYinColorExplain from './PinYinColorExplain'
 
-import IndexedDBClass from './IndexedDBClass'
-import IndexedDBDictClass from './IndexedDBDictClass'
-
+import IndexedDBClass, { idbTYPE, idbStatus } from '../lib/IndexedDBClass'
 import style from './XxxData.module.css'
 
 import { useForm } from 'react-hook-form'
@@ -16,52 +18,42 @@ import ArrowForwardIosIcon from '@material-ui/icons/ArrowForwardIos';
 import CircularProgress from '@material-ui/core/CircularProgress'
 import ListOutlinedIcon from '@material-ui/icons/ListOutlined';
 
-const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato'];
-
 //■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
 //  DICTIONARY
 //■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
-const idbJibo = new IndexedDBDictClass({
-  db: { name: "dict_1_jibo", version: 1 },
-  store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
-  //indeces: [{idxName: "JB", unique: false },]
-  file: "./data/dict_1_jibo.json"
+
+//import { idbJibo, idbMain, idbPron, idbExtra, sample_base_path, sample_map } from './dicts'
+import { sample_base_path, sample_map } from './dicts'
+
+const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato'];
+
+//■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
+//  SAMPLE DATA
+//■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
+
+const idbLogin = new IndexedDBClass({
+  db: { name: "login", version: 1 },
+  store: { name: "user", storeOptions: { keyPath: "KEY", autoIncrement: false }, },
 });
 
-const idbMain = new IndexedDBDictClass({
-  db: { name: "dict_2_main", version: 1 },
-  store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
-  file: "./data/dict_2_main.json"
-});
-
-const idbPron = new IndexedDBDictClass({
-  db: { name: "dict_3_pron", version: 1 },
-  store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
-  file: "./data/dict_3_pron.json"
-});
-
-const idbExtra = new IndexedDBDictClass({
-  db: { name: "dict_4_extra", version: 1 },
-  store: { name: "dict", storeOptions: { keyPath: "W", autoIncrement: false }, },
-  file: "./data/dict_4_extra.json"
-});
-
-const sample_base_path = "./data/"
-const sample_map = new Map([
-  ['hong', { TTL: '紅小帽', FILE: 'sentence_akazukin.json' }],
-  ['holday', { TTL: '休暇', FILE: 'sentence_holiday.json' }],
-]);
-
-// const idbLogin = new IndexedDBClass({
-//   db: { name: "login", version: 1 },
-//   store: { name: "user", storeOptions: { keyPath: "KEY", autoIncrement: false }, },
-// });
-
+let sampleCounter = 1
+let sampleItems = ['John', 'Smith', 'Kenny', 'Steve', 'Jeff', 'Kelly', 'Bill', 'Grain']
 
 //■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
 //  Main Function
 //■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
 function XxxData() {
+  //==========================================
+  // ■ DEBUG
+  //==========================================
+  let debug_pref = 'XxxData: ';
+
+  //==========================================
+  // ■ Redux
+  //==========================================
+  const dispatch = useDispatch();
+  //  const { loading, error, dicts } = useSelector(selectDicts);
+
   //==========================================
   // ■ 変数
   //==========================================
@@ -87,42 +79,100 @@ function XxxData() {
   //==========================================
   // ■ useEffect
   //==========================================
+  useEffect(() => {
+    dispatch(fetchDicts());
+  }, [dispatch]);   //Dicts
+
   useEffect(
     () => {
       (async () => {
-        await Promise.all([
-          idbJibo.setDict(),
-          idbMain.setDict(),
-          idbPron.setDict(),
-          idbExtra.setDict(),
-        ]);
+        const res = await idbLogin.initDB({ debug: false })
 
         //以下はデバグ用タイマー
-        setTimeout(() => { setAllDicReady(true); }, 2000);
+        setTimeout(() => { setAllDicReady(true); }, 1000);
       })()
     }, []
   )
 
   //==========================================
+  // ■ Handlers(Test)
+  //==========================================
+  // [■HANDLER] 変換
+
+  const handleTestAdd = () => {
+    (async () => {
+      const info = { KEY: sampleCounter, NAME: sampleItems[sampleCounter] };
+      const res = await idbLogin.exec({ type: idbTYPE.Add, data: info, debug: true })
+      if (res) console.log(debug_pref, 'ADD', res.result)
+
+      sampleCounter++;
+      if (sampleItems.length <= sampleCounter) sampleCounter = 1
+    })().catch((e) => {
+      console.error(debug_pref, e.result)
+    })
+  }
+
+  const handleTestUpd = () => {
+    (async () => {
+      const info = { KEY: 1, NAME: sampleItems[sampleCounter] + '_upd_' + sampleCounter };
+      const res = await idbLogin.exec({ type: idbTYPE.Update, key: 1, data: info, debug: true })
+      if (res) console.log(debug_pref, 'UPD', res.result)
+    })().catch((e) => {
+      switch (e.status) {
+        case idbStatus.NOREC2UPD:
+          console.error(debug_pref, 'KEY NOT FOUND: ', e.result)
+          break;
+        default:
+          console.error(debug_pref, e.result)
+      }
+    })
+  }
+
+  const handleTestDel = () => {
+    (async () => {
+      const res = await idbLogin.exec({ type: idbTYPE.Delete, key: 1, debug: true })
+      if (res) console.log(debug_pref, 'DEL', res.result)
+    })().catch((e) => {
+      console.error(debug_pref, e.result)
+    })
+  }
+
+  const handleTestClear = () => {
+    (async () => {
+      const res = await idbLogin.exec({ type: idbTYPE.Clear, debug: true })
+      if (res) console.log(debug_pref, 'CLEAR', res.result)
+    })().catch((e) => {
+      console.error(debug_pref, e.result)
+    })
+  }
+
+  const handleTestGet = () => {
+    (async () => {
+      const res = await idbLogin.exec({ type: idbTYPE.GetAll, debug: true })
+      if (res) console.log(debug_pref, 'GET', res.result)
+    })().catch((e) => {
+      console.error(debug_pref, 'GetAll', e.result)
+    })
+  }
+
+  //==========================================
   // ■ Handlers
   //==========================================
-
   // [■HANDLER] 変換
   const handleChange = () => {  //console.log('handleChange'); 
     (async () => {
       let sentence = getValues('txtChinese')
       //let sentence = data.txtChinese;  //引数: data
       if (!sentence) return
-      const res = await makeLetterColored({
-        sentence, idbMain, idbExtra, idbJibo, idbPron
-      })  //console.log(res);
+      const res = await makeLetterColored({ sentence })
+      //console.log(res);
       if (res) setSounds(res)
     })();
   }
 
   // [■HANDLER] サンプル文章取得
   const handleSample = (dir) => {
-    console.log('handleSample:', allDicReady)
+    //console.log('handleSample:', allDicReady)
 
     const sampleSize = sample.length;    //sampleText
     let newidx = null;
@@ -256,7 +306,7 @@ function XxxData() {
               if (e.key === 'Enter') { handleChange() }
             }}
             placeholder="中国語入力後、実行ボタンを押す..."
-          //defaultValue="一般一半一个人一生不是不买不卖不一样"
+            defaultValue="一般一半"
           />
         </div>
 
@@ -282,6 +332,27 @@ function XxxData() {
               disabled={!allDicReady}
             >実行</Button>
           </div>
+        </div>
+
+        { /* ---------- TEST BUTTONS  ---------- */}
+        <div className={style.body_tr_flex}
+          style={{ flexWrap: "wrap", alignContent: "space-between" }}
+        >
+          <Button color="secondary" variant="contained"
+            className={style.inputbutton}
+            onClick={() => { handleTestGet() }}>取得</Button>
+          <Button color="secondary" variant="contained"
+            className={style.inputbutton}
+            onClick={() => { handleTestAdd() }}>挿入</Button>
+          <Button color="secondary" variant="contained"
+            className={style.inputbutton}
+            onClick={() => { handleTestUpd() }}>更新</Button>
+          <Button color="secondary" variant="contained"
+            className={style.inputbutton}
+            onClick={() => { handleTestDel() }}>削除</Button>
+          <Button color="secondary" variant="contained"
+            className={style.inputbutton}
+            onClick={() => { handleTestClear() }}>全削</Button>
         </div>
 
         { /* ---------- LOADING CYCLE ---------- */}

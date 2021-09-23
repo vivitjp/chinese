@@ -3,9 +3,9 @@
 //  
 //===========================================
 
-import { idbSTATUS } from './IndexedDBClass'
-import { getJson } from '../api/getJson';
-import IndexedDBClass from './IndexedDBClass'
+import { idbStatus } from '../../lib/IndexedDBClass'
+import { getJson } from '../../api/getJson';
+import IndexedDBClass, { idbTYPE } from '../../lib/IndexedDBClass'
 
 class IndexedDBDictClass { // extends Promise
   constructor({ db, store, file, indeces }) {   // ??????????? indeces
@@ -20,24 +20,23 @@ class IndexedDBDictClass { // extends Promise
   //===========================================
   // 
   //===========================================
-  async setDict() {
+  async setDict({ debug = false } = {}) {
     try {
-      //console.log(idbClass.file)
+      const res = await this.idb.initDB({ debug });
+      if (debug) console.log('IndexedDB4Dict initDB: ', res)
 
-      const res = await this.idb.initDB({ debug: true });
-      //console.log('IndexedDB4Dict initDB: ', res)
-
-      switch (res) {
-        case idbSTATUS.OK: //(1)辞書存在 console.log('辞書存在')
-          console.log(this.idb.dbObj.name, 'Already Set');
+      switch (res.status) {
+        case idbStatus.OK: //(1)辞書存在 console.log('辞書存在')
+          if (debug) console.log(this.idb.dbObj.name, 'Already Set');
           return true
-        case idbSTATUS.NEW: //(2)新規作成
+        case idbStatus.NEW: //(2)新規作成
           const data = await getJson(this.file)
           if (!data) throw Error('DATA が空')
           if (!Array.isArray(data)) throw Error('DATA 形式不正: 配列のみ')
 
-          //console.log('idbClass.file: SIZE: ', data.length)
-          await this.idb.add({ data: data });   //全登録
+          //console.log('SIZE: ', this.idb.dbObj.name, data.length)
+          await this.idb.exec({ type: idbTYPE.Add, data: data })   //全登録
+          //await this.idb.add({ data: data });
           return true
         default:
           throw Error('Status Error')
