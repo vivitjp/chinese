@@ -163,61 +163,63 @@ class IndexedDBClass { // extends Promise
           let storeReq = null;
 
           //======================
-          //  ■ [挿入(複数)]
+          //  ■ [挿入(単数/配列)]
           //======================
-          if (type === idbTYPE.Add && Array.isArray(data)) {
-            for (const n of [...data]) {       //add では Error が表示されない
+          if (type === idbTYPE.Add) {
+            if (data === [] || !data) reject({ status: idbStatus.ERR, result: 'No Data' });
+            const arrData = !Array.isArray(data) ? [data] : data;
+            for (const n of [...arrData]) {       //add では Error が表示されない
               storeReq = objStore.put(n);    //PUT!!!
               numSucess++;
-            }
-            resolve({ status: idbStatus.OK, result: numSucess });
-          } else
-            //======================
-            //  ■ [更新(単数)]
-            //======================
-            if (type === idbTYPE.Update) {
-              storeReq = objStore.get(key);  //Key 存在の確認
-              storeReq.onsuccess = (e) => {
-                if (debug) console.log(debug_pref, '単数 DATA 更新: ', e.target.result)
-                if (!e.target.result || e.target.result === 0) {
-                  reject({ status: idbStatus.NOREC2UPD, result: key });
-                } else {
-                  //console.log('Update', 'OK')
-                  let storeReqPut = objStore.put(data);
-                  storeReqPut.onsuccess = (e) => {
-                    resolve({ status: idbStatus.OK, result: e.target.result });
-                  }
-                  storeReqPut.onerror = (e) => {
-                    reject({ status: idbStatus.NOREC2UPD, result: key });
-                  }
-                }
-              }
+              //storeReq.onsuccess = (e) => {} 複数なので省略
               storeReq.onerror = (e) => { throw Error(e.message); }
             }
-            //======================
-            // ■ [挿入(単数)], [削除(単数/全体)], [取得(単数/全体)]
-            //======================
-            else {
-              switch (type) {
-                case idbTYPE.Add:
-                  storeReq = objStore.put(data); break; //■ 単数 DATA 挿入
-                case idbTYPE.Delete:
-                  storeReq = objStore.delete(key); break; //■ 単数 DATA 削除
-                case idbTYPE.Clear:
-                  storeReq = objStore.clear(); break;//■ DATA 全削除
-                case idbTYPE.GetOne:
-                  storeReq = objStore.get(key); break;//■ 単数 DATA 取得
-                case idbTYPE.GetAll:
-                  storeReq = objStore.getAll(key || null); break;//■ 全体 DATA 取得
-                default:
-              }
-              storeReq.onsuccess = (e) => {
-                resolve({ status: idbStatus.OK, result: e.target.result || 0 });
-              }
-              storeReq.onerror = (e) => {
-                reject({ status: idbStatus.ERR, result: e.message });
+            resolve({ status: idbStatus.OK, result: numSucess });
+          }
+          //======================
+          //  ■ [更新(単数)]
+          //======================
+          else if (type === idbTYPE.Update) {
+            storeReq = objStore.get(key);  //Key 存在の確認
+            storeReq.onsuccess = (e) => {
+              if (debug) console.log(debug_pref, '単数 DATA 更新: ', e.target.result)
+              if (!e.target.result || e.target.result === 0) {
+                reject({ status: idbStatus.NOREC2UPD, result: key });
+              } else {
+                //console.log('Update', 'OK')
+                let storeReqPut = objStore.put(data);
+                storeReqPut.onsuccess = (e) => {
+                  resolve({ status: idbStatus.OK, result: e.target.result });
+                }
+                storeReqPut.onerror = (e) => {
+                  reject({ status: idbStatus.NOREC2UPD, result: key });
+                }
               }
             }
+            storeReq.onerror = (e) => { throw Error(e.message); }
+          }
+          //======================
+          // ■ [挿入(単数)], [削除(単数/全体)], [取得(単数/全体)]
+          //======================
+          else {
+            switch (type) {
+              case idbTYPE.Delete:
+                storeReq = objStore.delete(key); break; //■ 単数 DATA 削除
+              case idbTYPE.Clear:
+                storeReq = objStore.clear(); break;//■ DATA 全削除
+              case idbTYPE.GetOne:
+                storeReq = objStore.get(key); break;//■ 単数 DATA 取得
+              case idbTYPE.GetAll:
+                storeReq = objStore.getAll(key || null); break;//■ 全体 DATA 取得
+              default:
+            }
+            storeReq.onsuccess = (e) => {
+              resolve({ status: idbStatus.OK, result: e.target.result || 0 });
+            }
+            storeReq.onerror = (e) => {
+              reject({ status: idbStatus.ERR, result: e.message });
+            }
+          }
 
           //■ Transaction: 成功
           transaction.oncomplete = () => {

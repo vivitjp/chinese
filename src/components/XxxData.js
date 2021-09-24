@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectDicts, fetchDicts } from './store/dictsSlice'
+//import { selectInfo, infoInitDB, infoGetOne, infoGetAll, infoAdd, infoUpdate, infoDelete, infoClear } from './store/infoSlice'
 
 import { getJson } from '../api/getJson';
 
@@ -8,7 +9,7 @@ import makeLetterColored from './makeLetterColored'
 import { KanjiHTML } from './KanjiHTML';
 import PinYinColorExplain from './PinYinColorExplain'
 
-import IndexedDBClass, { idbTYPE, idbStatus } from '../lib/IndexedDBClass'
+//import { idbTYPE, idbStatus } from '../lib/IndexedDBClass'
 import style from './XxxData.module.css'
 
 import { useForm } from 'react-hook-form'
@@ -31,28 +32,19 @@ const colors = ['#AAA', '#666', 'DodgerBlue', 'SeaGreen', 'Tomato'];
 //  SAMPLE DATA
 //■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
 
-const idbLogin = new IndexedDBClass({
-  db: { name: "login", version: 1 },
-  store: { name: "user", storeOptions: { keyPath: "KEY", autoIncrement: false }, },
-});
-
-let sampleCounter = 1
-let sampleItems = ['John', 'Smith', 'Kenny', 'Steve', 'Jeff', 'Kelly', 'Bill', 'Grain']
+// let sampleCounter = 1
+// let sampleItems = ['John', 'Smith', 'Kenny', 'Steve', 'Jeff', 'Kelly', 'Bill', 'Grain']
 
 //■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
 //  Main Function
 //■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□■□
 function XxxData() {
   //==========================================
-  // ■ DEBUG
-  //==========================================
-  let debug_pref = 'XxxData: ';
-
-  //==========================================
   // ■ Redux
   //==========================================
-  const dispatch = useDispatch();
-  //  const { loading, error, dicts } = useSelector(selectDicts);
+  const dispatchDict = useDispatch();
+  //const dispatchInfo = useDispatch();
+  //const { loading, error, result } = useSelector(selectInfo);
 
   //==========================================
   // ■ 変数
@@ -79,16 +71,12 @@ function XxxData() {
   //==========================================
   // ■ useEffect
   //==========================================
-  useEffect(() => {
-    dispatch(fetchDicts());
-  }, [dispatch]);   //Dicts
+  useEffect(() => { dispatchDict(fetchDicts()) }, [dispatchDict]);   //Dicts
+  //useEffect(() => { dispatchInfo(infoInitDB()) }, [dispatchInfo]);   //Info
 
   useEffect(
     () => {
-      (async () => {
-        const res = await idbLogin.initDB({ debug: false })
-
-        //以下はデバグ用タイマー
+      (async () => { //以下はデバグ用タイマー
         setTimeout(() => { setAllDicReady(true); }, 1000);
       })()
     }, []
@@ -97,63 +85,19 @@ function XxxData() {
   //==========================================
   // ■ Handlers(Test)
   //==========================================
-  // [■HANDLER] 変換
-
-  const handleTestAdd = () => {
-    (async () => {
-      const info = { KEY: sampleCounter, NAME: sampleItems[sampleCounter] };
-      const res = await idbLogin.exec({ type: idbTYPE.Add, data: info, debug: true })
-      if (res) console.log(debug_pref, 'ADD', res.result)
-
-      sampleCounter++;
-      if (sampleItems.length <= sampleCounter) sampleCounter = 1
-    })().catch((e) => {
-      console.error(debug_pref, e.result)
-    })
-  }
-
-  const handleTestUpd = () => {
-    (async () => {
-      const info = { KEY: 1, NAME: sampleItems[sampleCounter] + '_upd_' + sampleCounter };
-      const res = await idbLogin.exec({ type: idbTYPE.Update, key: 1, data: info, debug: true })
-      if (res) console.log(debug_pref, 'UPD', res.result)
-    })().catch((e) => {
-      switch (e.status) {
-        case idbStatus.NOREC2UPD:
-          console.error(debug_pref, 'KEY NOT FOUND: ', e.result)
-          break;
-        default:
-          console.error(debug_pref, e.result)
-      }
-    })
-  }
-
-  const handleTestDel = () => {
-    (async () => {
-      const res = await idbLogin.exec({ type: idbTYPE.Delete, key: 1, debug: true })
-      if (res) console.log(debug_pref, 'DEL', res.result)
-    })().catch((e) => {
-      console.error(debug_pref, e.result)
-    })
-  }
-
-  const handleTestClear = () => {
-    (async () => {
-      const res = await idbLogin.exec({ type: idbTYPE.Clear, debug: true })
-      if (res) console.log(debug_pref, 'CLEAR', res.result)
-    })().catch((e) => {
-      console.error(debug_pref, e.result)
-    })
-  }
-
-  const handleTestGet = () => {
-    (async () => {
-      const res = await idbLogin.exec({ type: idbTYPE.GetAll, debug: true })
-      if (res) console.log(debug_pref, 'GET', res.result)
-    })().catch((e) => {
-      console.error(debug_pref, 'GetAll', e.result)
-    })
-  }
+  // const handleTestAdd = () => {
+  //   const data = { KEY: sampleCounter, NAME: sampleItems[sampleCounter] };
+  //   dispatchInfo(infoAdd({ data }))
+  //   sampleCounter++;
+  // }
+  // const handleTestUpd = () => {
+  //   const data = { KEY: 1, NAME: sampleItems[sampleCounter] + '_upd_' + sampleCounter };
+  //   dispatchInfo(infoUpdate({ data, key: 1, debug: true }))
+  // }
+  // const handleTestDel = () => { dispatchInfo(infoDelete({ key: 1, debug: true })) }
+  // const handleTestClear = () => { dispatchInfo(infoClear({ debug: true })) }
+  // const handleTestGetOne = () => { dispatchInfo(infoGetOne({ key: 1, debug: true })) }
+  // const handleTestGetAll = () => { dispatchInfo(infoGetAll({ debug: true })) }
 
   //==========================================
   // ■ Handlers
@@ -165,7 +109,6 @@ function XxxData() {
       //let sentence = data.txtChinese;  //引数: data
       if (!sentence) return
       const res = await makeLetterColored({ sentence })
-      //console.log(res);
       if (res) setSounds(res)
     })();
   }
@@ -335,12 +278,15 @@ function XxxData() {
         </div>
 
         { /* ---------- TEST BUTTONS  ---------- */}
-        <div className={style.body_tr_flex}
+        {/* <div className={style.body_tr_flex}
           style={{ flexWrap: "wrap", alignContent: "space-between" }}
         >
           <Button color="secondary" variant="contained"
             className={style.inputbutton}
-            onClick={() => { handleTestGet() }}>取得</Button>
+            onClick={() => { handleTestGetAll() }}>全取得</Button>
+          <Button color="secondary" variant="contained"
+            className={style.inputbutton}
+            onClick={() => { handleTestGetOne() }}>取得(1)</Button>
           <Button color="secondary" variant="contained"
             className={style.inputbutton}
             onClick={() => { handleTestAdd() }}>挿入</Button>
@@ -353,7 +299,12 @@ function XxxData() {
           <Button color="secondary" variant="contained"
             className={style.inputbutton}
             onClick={() => { handleTestClear() }}>全削</Button>
-        </div>
+          <div>
+            <div>{JSON.stringify(result?.result || null)}</div>
+            <div>{JSON.stringify(error || null)}</div>
+            <div>{JSON.stringify(loading || null)}</div>
+          </div>
+        </div> */}
 
         { /* ---------- LOADING CYCLE ---------- */}
         {!allDicReady &&
